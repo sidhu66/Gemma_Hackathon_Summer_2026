@@ -1,5 +1,9 @@
 # Node modules
 **/node_modules/
+node_modules
+/back-end/node_modules
+/front-end/node_modules
+/node_modules
 
 # Environment files
 *.env
@@ -26,7 +30,3 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
-node_modules
-/back-end/node_modules
-/front-end/node_modules
-/node_modules
