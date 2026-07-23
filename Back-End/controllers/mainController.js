@@ -3,10 +3,14 @@ import db from "../dbConnection.js";
 import { VertexAI } from '@google-cloud/vertexai';
 import { createClient } from "@deepgram/sdk";
 import * as Sentry from '@sentry/node';
-import ollama from 'ollama';
+import { Ollama } from 'ollama';
 dotenv.config();
 
 const deepgram = createClient(process.env.DEEPGRAM_APIKEY);
+const ollama = new Ollama({
+  host: process.env.OLLAMA_HOST || 'http://127.0.0.1:11434'
+});
+const ollamaModel = process.env.OLLAMA_MODEL || 'gemma4:12b';
 
 // Start Interview Function
 const startInterview = async (req, res) => {
@@ -122,9 +126,26 @@ const textToSpeechDeepgram = async (req, res) => {
   return await ttsSpan;
 };
 
+const parseFeedbackJson = (raw) => {
+  const trimmed = (raw || '').trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced?.[1]) {
+      return JSON.parse(fenced[1].trim());
+    }
+    const objectMatch = trimmed.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      return JSON.parse(objectMatch[0]);
+    }
+    throw new Error('Model did not return valid JSON feedback');
+  }
+};
+
 // Function to evaluate interview
 const evaluateInterview = async (userid, chatLog, interviewId) => {
-  const model = 'finetunedmodel';
+  const model = ollamaModel;
   const intakeResult = await db.query(
         "SELECT intake FROM interviews WHERE id = $1 AND user_id = $2",
         [interviewId, userid]
@@ -134,7 +155,7 @@ const evaluateInterview = async (userid, chatLog, interviewId) => {
     op: 'ai.evaluation',
     name: 'Ollama Interview Evaluation',
     tags: {
-      model: 'fine_tuned_model',
+      model,
       chat_log_length: chatLog?.length
     }
   }, async () => {
@@ -146,11 +167,17 @@ const evaluateInterview = async (userid, chatLog, interviewId) => {
         Transcript: chatLog
       });
 
-      console.log(prompt);
-      const feedbackResult = await ollama.generate({ model, prompt });
+      console.log('[ollama] evaluateInterview:start', { model, interviewId });
+      const feedbackResult = await ollama.generate({
+        model,
+        prompt,
+        format: 'json',
+        think: false,
+        options: { temperature: 0.2 }
+      });
 
       const detailedFeedback = feedbackResult.response;
-      const parsed = JSON.parse(detailedFeedback);
+      const parsed = parseFeedbackJson(detailedFeedback);
 
       return {
         score: parsed.grade,
@@ -159,7 +186,10 @@ const evaluateInterview = async (userid, chatLog, interviewId) => {
     } catch (error) {
       console.error("Error evaluating interview:", error);
       console.error("Error details:", error.message);
-      return { error: "Failed to evaluate interview.", details: error.message };
+      return {
+        error: `Failed to evaluate interview with Ollama model '${model}'.`,
+        details: error.message
+      };
     }
   });
 
