@@ -25,7 +25,7 @@ db.connect();
 //from the origin listed or it is usually blocked for safety concerns
 app.use(
     cors({
-        origin: ["http://localhost:5173", "http://localhost:8081"],
+        origin: ["http://localhost:5174", "http://localhost:8081"],
         methods: "GET,POST,PUT,PATCH,DELETE",
         credentials: true,
     })

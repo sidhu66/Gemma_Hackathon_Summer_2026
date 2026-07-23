@@ -1,10 +1,12 @@
-import OpenAI from 'openai';
+import { Ollama } from 'ollama';
 import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const ollama = new Ollama({
+    host: process.env.OLLAMA_HOST || 'http://127.0.0.1:11434'
+});
+const model = process.env.OLLAMA_MODEL || 'gemma4:12b';
 
 const buildIntroPrompt = (parsedMessage) => `
         # INTERVIEWER ROLE & CONTEXT
@@ -49,6 +51,12 @@ const buildIntroPrompt = (parsedMessage) => `
         Remember: This is a REAL interview with a REAL person. Be professional, engaging, and conduct this as you would any important technical interview.
                     `;
 
+const toOllamaMessages = (history) =>
+    history.map((message) => ({
+        role: message.role === 'developer' ? 'system' : message.role,
+        content: message.content
+    }));
+
 export function createNewChat(userId) {
     return {
         sessionId: randomUUID(),
@@ -71,7 +79,8 @@ export function seedChat(chat, parsedMessage, interviewId) {
 
 export async function askAndrespond(chat, msg, ws, messageEvent){
     try{
-        console.log('[openai] askAndrespond:start', {
+        console.log('[ollama] askAndrespond:start', {
+            model,
             messageEvent,
             historyLength: chat.history.length,
             msgPreview: typeof msg === 'string' ? msg.slice(0, 100) : msg
@@ -84,25 +93,24 @@ export async function askAndrespond(chat, msg, ws, messageEvent){
             });
         }
 
-        const streamInput = chat.history.map((message) => ({
-            role: message.role,
-            content: message.role === 'assistant'
-                ? [{ type: 'output_text', text: message.content }]
-                : [{ type: 'input_text', text: message.content }]
-        }));
+        const messages = toOllamaMessages(chat.history);
 
         if (messageEvent === "intro") {
-            streamInput.push({
+            messages.push({
                 role: 'user',
                 content: 'Provide your opening introduction now.'
             });
         }
 
-        const responseStream = await client.responses.stream({
+        const responseStream = await ollama.chat({
             model,
-            input: streamInput,
-            max_output_tokens: 300,
-            temperature: 0.7,
+            messages,
+            stream: true,
+            think: false,
+            options: {
+                temperature: 0.7,
+                num_predict: 300
+            }
         });
 
         let text = '';
@@ -110,12 +118,12 @@ export async function askAndrespond(chat, msg, ws, messageEvent){
         let chunkCount = 0;
         const CHUNK_CHAR_THRESHOLD = 120;
 
-        for await (const event of responseStream) {
-            if (event.type !== 'response.output_text.delta') {
+        for await (const part of responseStream) {
+            const chunkText = part.message?.content || '';
+            if (!chunkText) {
                 continue;
             }
 
-            const chunkText = event.delta;
             textToSend += chunkText;
             text += chunkText;
 
@@ -132,7 +140,7 @@ export async function askAndrespond(chat, msg, ws, messageEvent){
             chunkCount += 1;
         }
 
-        console.log('[openai] stream-complete', {
+        console.log('[ollama] stream-complete', {
             sessionId: chat.sessionId,
             totalTextLength: text.length,
             chunkCount
@@ -145,9 +153,10 @@ export async function askAndrespond(chat, msg, ws, messageEvent){
 
         return text;
     } catch(error){
-        console.log('[openai] askAndrespond:error', {
+        console.log('[ollama] askAndrespond:error', {
             sessionId: chat.sessionId,
             interviewId: chat.interviewId,
+            model,
             messageEvent,
             error: error.message
         })
