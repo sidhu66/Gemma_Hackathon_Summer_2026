@@ -1,6 +1,3 @@
-I'm in **Ask mode**, so I can't write the file to disk. Copy this into something like `TASKS.md`, or switch to Agent mode and ask me to create it.
-
-```markdown
 # Interview.me — Team Task Board
 
 > Split across 5 members. Core product loop exists; work focuses on making it runnable, secure, complete, and shippable.
@@ -252,8 +249,7 @@ I'm in **Ask mode**, so I can't write the file to disk. Copy this into something
 2. **Member 3 and Member 2** sync on `endInterview` / ownership before changing controllers.
 3. **Member 4 and Member 5** agree Landing copy before Member 4 ships UI.
 4. No secrets in PRs (`.env` stays local; only `.env.example` committed).
-```
 
----
 
-If you want this saved as `TASKS.md` in the repo, switch to **Agent mode** and ask me to create the file.
+
+## comment made by shifa, ignore will delete later
