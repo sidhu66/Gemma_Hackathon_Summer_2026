@@ -1,5 +1,4 @@
 import axios from 'axios';
-import * as Sentry from '@sentry/react';
 
 // Create an Axios instance with base URL and credentials enabled
 const api = axios.create({
@@ -27,37 +26,10 @@ api.interceptors.response.use(
                 // Retry the original request with the new access token
                 return api(originalRequest);
             } catch (err) {
-                // If the refresh token request fails, capture the error in Sentry
-                Sentry.captureException(err, {
-                    tags: {
-                        component: 'axios-interceptor',
-                        action: 'refresh-token-failed'
-                    },
-                    extra: {
-                        originalUrl: originalRequest.url,
-                        originalMethod: originalRequest.method
-                    }
-                });
                 return Promise.reject(err);
             }
         }
 
-        // If the error is not 401 or the request has already been retried, capture the error in Sentry
-        Sentry.captureException(error, {
-            tags: {
-                component: 'axios-interceptor',
-                action: 'api-error',
-                status: error.response?.status || 'unknown'
-            },
-            extra: {
-                url: error.config?.url,
-                method: error.config?.method,
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data
-            }
-        });
-        
         return Promise.reject(error);
     }
 );

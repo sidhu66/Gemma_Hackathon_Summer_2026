@@ -6,7 +6,6 @@ import { Area } from "../components/Area";
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { LogoutHook, useLogout } from "@/hooks/useLogout";
-import * as Sentry from '@sentry/react';
 import { Speaker, FeedbackData } from "@/utils/types";
 import ChatToView from "@/components/ChatToView";
 import FeedbackCarousel from "@/components/FeedbackCarousel";
@@ -43,36 +42,15 @@ const Home = () => {
     }
 
     const fetchInterviewData = async () =>{
-        // Create a custom span for the interview data fetch
-        await Sentry.startSpan({
-            name: 'interview.fetchRecent',
-            op: 'db.query',
-            attributes: {
-                'component': 'frontend-interview',
-                'endpoint': '/api/interview/getRecentInterview'
-            }
-        }, async () => {
-            try{
-                const response = await api.get<RecentInterviewResponse>("/api/interview/getRecentInterview");
-                setRecentInterviews(response.data.recentInterviews);
-                setLatestInterviewChat(response.data.latestInterview ? JSON.parse(response.data.latestInterview.chat) : []);
-                setLatestFeedback(response.data.latestInterview?.feedback ? JSON.parse(response.data.latestInterview.feedback) : null);
-                setSelectedLabel("Latest Interview");
-            }catch(err){
-                console.log(err);
-                // Capture the error in Sentry with additional context
-                Sentry.captureException(err, {
-                    tags: {
-                        component: 'Home',
-                        action: 'fetchInterviewData'
-                    },
-                    extra: {
-                        userId: user?.email,
-                        endpoint: '/api/interview/getRecentInterview'
-                    }
-                });
-            }
-        });
+        try{
+            const response = await api.get<RecentInterviewResponse>("/api/interview/getRecentInterview");
+            setRecentInterviews(response.data.recentInterviews);
+            setLatestInterviewChat(response.data.latestInterview ? JSON.parse(response.data.latestInterview.chat) : []);
+            setLatestFeedback(response.data.latestInterview?.feedback ? JSON.parse(response.data.latestInterview.feedback) : null);
+            setSelectedLabel("Latest Interview");
+        }catch(err){
+            console.log(err);
+        }
     }
 
     const onSelectInterview = async (interview: { id: number; institution: string; typeofinterview: string }) => {

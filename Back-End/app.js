@@ -1,4 +1,3 @@
-import Sentry from './sentry.js';
 import express from 'express';
 import userRoutes from './routes/user.js';
 import mainRoutes from './routes/main.js';
@@ -47,9 +46,6 @@ app.use((req, res, next) => {
 //in this case userRoutes are routes related to authentication
 app.use("/api/user", userRoutes);
 app.use('/api/interview', mainRoutes);
-
-// Sentry error handler - MUST be last
-Sentry.setupExpressErrorHandler(app);
 
 //Server listening on port listed in env file
 app.listen(process.env.PORT, () => {
