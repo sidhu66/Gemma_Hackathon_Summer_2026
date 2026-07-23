@@ -89,18 +89,24 @@ type StarCategory = {
 }
 
 type StarFeedback = {
-    situation: StarCategory,
-    task: StarCategory,
-    action: StarCategory,
-    result: StarCategory
+    situation?: StarCategory,
+    task?: StarCategory,
+    action?: StarCategory,
+    result?: StarCategory
+}
+
+type FeedbackSection = {
+    title: string,
+    content: string
 }
 
 type FeedbackData = {
     grade: number,
-    summary: string,
-    star: StarFeedback,
-    mockAnswer: string,
-    suggestions: string[]
+    summary: string | Record<string, unknown>,
+    star?: StarFeedback,
+    mockAnswer?: string | Record<string, unknown>,
+    suggestions?: string[] | string,
+    sections?: FeedbackSection[]
 }
 
 type interviewContent = {

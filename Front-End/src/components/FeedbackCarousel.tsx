@@ -11,17 +11,60 @@ const starKeys = ["situation", "task", "action", "result"] as const;
 type CarouselCard =
     | { type: "summary" }
     | { type: "star"; starKey: typeof starKeys[number] }
+    | { type: "section"; index: number }
     | { type: "mockAnswer" }
     | { type: "suggestions" };
 
-const buildCards = (feedback: FeedbackData): CarouselCard[] => [
-    { type: "summary" },
-    ...starKeys.map((k: typeof starKeys[number]) => ({ type: "star" as const, starKey: k })),
-    ...(feedback.mockAnswer ? [{ type: "mockAnswer" as const }] : []),
-    ...(feedback.suggestions?.length ? [{ type: "suggestions" as const }] : []),
-];
+/** Normalize suggestions whether the API returns a string[] or a single string/object. */
+const normalizeSuggestions = (suggestions: unknown): string[] => {
+    if (Array.isArray(suggestions)) {
+        return suggestions.map((s) => (typeof s === "string" ? s : String(s))).filter(Boolean);
+    }
+    if (typeof suggestions === "string" && suggestions.trim()) {
+        return [suggestions.trim()];
+    }
+    if (suggestions && typeof suggestions === "object") {
+        return Object.values(suggestions)
+            .map((s) => (typeof s === "string" ? s : String(s)))
+            .filter(Boolean);
+    }
+    return [];
+};
+
+const buildCards = (feedback: FeedbackData): CarouselCard[] => {
+    const cards: CarouselCard[] = [{ type: "summary" }];
+
+    const availableStarKeys = starKeys.filter((k) => feedback.star?.[k]);
+    if (availableStarKeys.length > 0) {
+        cards.push(...availableStarKeys.map((k) => ({ type: "star" as const, starKey: k })));
+    } else if (Array.isArray(feedback.sections) && feedback.sections.length > 0) {
+        cards.push(...feedback.sections.map((_, index) => ({ type: "section" as const, index })));
+    }
+
+    if (feedback.mockAnswer) {
+        cards.push({ type: "mockAnswer" });
+    }
+    if (normalizeSuggestions(feedback.suggestions).length > 0) {
+        cards.push({ type: "suggestions" });
+    }
+
+    return cards;
+};
 
 const cardStyle = "bg-gradient-to-br from-indigo-600/30 to-purple-700/30 rounded-2xl p-5 border border-indigo-500/40";
+
+const toDisplayText = (value: unknown): string => {
+    if (typeof value === "string") return value;
+    if (value == null) return "";
+    if (typeof value === "object") {
+        try {
+            return JSON.stringify(value, null, 2);
+        } catch {
+            return String(value);
+        }
+    }
+    return String(value);
+};
 
 const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
     const [activeIndex, setActiveIndex] = useState(0);
@@ -62,19 +105,26 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                                 <p className="text-white text-sm font-medium">{feedback.grade}/10</p>
                             </div>
                         </div>
-                        <p className="text-gray-200 text-sm leading-relaxed">{feedback.summary}</p>
+                        <p className="text-gray-200 text-sm leading-relaxed">{toDisplayText(feedback.summary)}</p>
                     </div>
                 );
 
             case "star": {
-                const cat = feedback.star[current.starKey];
+                const cat = feedback.star?.[current.starKey];
+                if (!cat) {
+                    return (
+                        <div className={cardStyle}>
+                            <p className="text-gray-400 text-sm">No {current.starKey} feedback available.</p>
+                        </div>
+                    );
+                }
                 return (
                     <div className={cardStyle}>
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="text-indigo-200 font-semibold text-base capitalize">{current.starKey}</h4>
                             <span className="text-white text-sm font-bold">{cat.score}/10</span>
                         </div>
-                        {cat.issues.length > 0 && (
+                        {cat.issues?.length > 0 && (
                             <div className="mb-2">
                                 <p className="text-xs text-red-400 uppercase tracking-wider font-semibold mb-1">Issues</p>
                                 <ul className="text-gray-200 text-sm space-y-0.5 list-disc list-inside">
@@ -82,7 +132,7 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                                 </ul>
                             </div>
                         )}
-                        {cat.improvements.length > 0 && (
+                        {cat.improvements?.length > 0 && (
                             <div>
                                 <p className="text-xs text-emerald-400 uppercase tracking-wider font-semibold mb-1">Improvements</p>
                                 <ul className="text-gray-200 text-sm space-y-0.5 list-disc list-inside">
@@ -94,23 +144,42 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                 );
             }
 
+            case "section": {
+                const section = feedback.sections?.[current.index];
+                if (!section) {
+                    return (
+                        <div className={cardStyle}>
+                            <p className="text-gray-400 text-sm">No section feedback available.</p>
+                        </div>
+                    );
+                }
+                return (
+                    <div className={cardStyle}>
+                        <h4 className="text-indigo-200 font-semibold mb-2 text-base">{section.title}</h4>
+                        <p className="text-gray-200 text-sm leading-relaxed">{section.content}</p>
+                    </div>
+                );
+            }
+
             case "mockAnswer":
                 return (
                     <div className={cardStyle}>
                         <h4 className="text-indigo-200 font-semibold mb-2 text-base">Mock Answer</h4>
-                        <p className="text-gray-200 text-sm leading-relaxed">{feedback.mockAnswer}</p>
+                        <p className="text-gray-200 text-sm leading-relaxed">{toDisplayText(feedback.mockAnswer)}</p>
                     </div>
                 );
 
-            case "suggestions":
+            case "suggestions": {
+                const suggestions = normalizeSuggestions(feedback.suggestions);
                 return (
                     <div className={cardStyle}>
                         <h4 className="text-indigo-200 font-semibold mb-2 text-base">Suggestions</h4>
                         <ul className="text-gray-200 text-sm space-y-1 list-disc list-inside">
-                            {feedback.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                            {suggestions.map((s, i) => <li key={i}>{s}</li>)}
                         </ul>
                     </div>
                 );
+            }
         }
     };
 
