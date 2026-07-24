@@ -8,6 +8,7 @@ import { NavigateFunction, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { addUser } from '@/redux/features/userSlice';
 import api from "@/lib/axios";
+import Waveform from "@/components/Waveform";
   
 type formData = {
     email: string,

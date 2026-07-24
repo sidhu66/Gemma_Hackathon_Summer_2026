@@ -7,27 +7,12 @@ import ReactMarkdown from "react-markdown";
 import ChatToView from "@/components/ChatToView";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
-import * as Sentry from "@sentry/react";
 import Waveform from "@/components/Waveform";
 
 const gradeColor = (grade: number) => {
   if (grade >= 8) return { text: "text-[var(--mm-teal)]", border: "border-[var(--mm-teal)]", bg: "bg-[var(--mm-teal-dim)]" };
   if (grade >= 5) return { text: "text-[var(--mm-signal)]", border: "border-[var(--mm-signal)]", bg: "bg-[var(--mm-signal-dim)]" };
   return { text: "text-[var(--mm-red)]", border: "border-[var(--mm-red)]", bg: "bg-[rgba(224,102,95,0.12)]" };
-};
-
-/** ReactMarkdown requires a string; the model sometimes returns objects. */
-const toMarkdownText = (value: unknown): string => {
-  if (typeof value === "string") return value;
-  if (value == null) return "";
-  if (typeof value === "object") {
-    try {
-      return JSON.stringify(value, null, 2);
-    } catch {
-      return String(value);
-    }
-  }
-  return String(value);
 };
 
 /** ReactMarkdown requires a string; the model sometimes returns objects. */
@@ -88,8 +73,9 @@ const Results = () => {
           setError("Data is null");
           throw new Error("Data is null"); // Trigger retry if data is null
         }
-      } catch (err: any) {
-        setError(err?.message);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message);
         console.error("Error fetching interview data:", err);
       }
     };
