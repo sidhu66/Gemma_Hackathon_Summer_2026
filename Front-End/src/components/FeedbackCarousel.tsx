@@ -51,7 +51,7 @@ const buildCards = (feedback: FeedbackData): CarouselCard[] => {
     return cards;
 };
 
-const cardStyle = "bg-[var(--mm-ink)] rounded-none p-5 border border-[var(--mm-ink-line)]";
+const cardStyle = "bg-[var(--mm-ink-soft)] rounded-2xl p-5 border border-[var(--mm-ink-line)]";
 
 const toDisplayText = (value: unknown): string => {
     if (typeof value === "string") return value;
@@ -71,7 +71,7 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
     const [animating, setAnimating] = useState(false);
 
     if (!feedback) {
-        return <p className="text-[var(--mm-slate)] text-sm mt-4 mm-font-mono">No feedback available yet.</p>;
+        return <p className="text-[var(--mm-slate)] text-sm mt-4">No feedback available yet.</p>;
     }
 
     const cards = buildCards(feedback);
@@ -97,11 +97,11 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                 return (
                     <div className={cardStyle}>
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 rounded-full bg-[var(--mm-signal-dim)] border border-[var(--mm-signal)]/50 flex items-center justify-center">
-                                <span className="mm-font-display text-xl text-[var(--mm-signal)]">{feedback.grade}</span>
+                            <div className="w-12 h-12 rounded-full bg-[var(--mm-signal-dim)] border border-[var(--mm-signal)]/30 flex items-center justify-center">
+                                <span className="text-lg font-semibold text-[var(--mm-signal)]">{feedback.grade}</span>
                             </div>
                             <div>
-                                <p className="text-xs text-[var(--mm-signal)] uppercase tracking-wider mm-font-mono font-semibold">Overall Grade</p>
+                                <p className="text-xs text-[var(--mm-signal)] uppercase tracking-wide font-semibold">Overall grade</p>
                                 <p className="text-[var(--mm-paper)] text-sm font-medium">{feedback.grade}/10</p>
                             </div>
                         </div>
@@ -114,19 +114,19 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                 if (!cat) {
                     return (
                         <div className={cardStyle}>
-                            <p className="text-gray-400 text-sm">No {current.starKey} feedback available.</p>
+                            <p className="text-[var(--mm-slate)] text-sm">No {current.starKey} feedback available.</p>
                         </div>
                     );
                 }
                 return (
                     <div className={cardStyle}>
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-[var(--mm-paper)] mm-font-mono text-xs uppercase tracking-widest">{current.starKey}</h4>
-                            <span className="text-[var(--mm-signal)] text-sm font-bold mm-font-mono">{cat.score}/10</span>
+                            <h4 className="text-[var(--mm-paper)] text-xs font-medium uppercase tracking-wide">{current.starKey}</h4>
+                            <span className="text-[var(--mm-signal)] text-sm font-bold">{cat.score}/10</span>
                         </div>
                         {cat.issues?.length > 0 && (
                             <div className="mb-2">
-                                <p className="text-xs text-[var(--mm-red)] uppercase tracking-wider mm-font-mono font-semibold mb-1">Issues</p>
+                                <p className="text-xs text-[var(--mm-red)] uppercase tracking-wide font-semibold mb-1">Issues</p>
                                 <ul className="text-[var(--mm-slate)] text-sm space-y-0.5 list-disc list-inside">
                                     {cat.issues.map((issue: string, i: number) => <li key={i}>{issue}</li>)}
                                 </ul>
@@ -134,7 +134,7 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                         )}
                         {cat.improvements?.length > 0 && (
                             <div>
-                                <p className="text-xs text-[var(--mm-teal)] uppercase tracking-wider mm-font-mono font-semibold mb-1">Improvements</p>
+                                <p className="text-xs text-[var(--mm-teal)] uppercase tracking-wide font-semibold mb-1">Improvements</p>
                                 <ul className="text-[var(--mm-slate)] text-sm space-y-0.5 list-disc list-inside">
                                     {cat.improvements.map((tip: string, i: number) => <li key={i}>{tip}</li>)}
                                 </ul>
@@ -149,14 +149,14 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                 if (!section) {
                     return (
                         <div className={cardStyle}>
-                            <p className="text-gray-400 text-sm">No section feedback available.</p>
+                            <p className="text-[var(--mm-slate)] text-sm">No section feedback available.</p>
                         </div>
                     );
                 }
                 return (
                     <div className={cardStyle}>
-                        <h4 className="text-indigo-200 font-semibold mb-2 text-base">{section.title}</h4>
-                        <p className="text-gray-200 text-sm leading-relaxed">{section.content}</p>
+                        <h4 className="text-[var(--mm-paper)] font-semibold mb-2 text-base">{section.title}</h4>
+                        <p className="text-[var(--mm-slate)] text-sm leading-relaxed">{section.content}</p>
                     </div>
                 );
             }
@@ -164,7 +164,7 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
             case "mockAnswer":
                 return (
                     <div className={cardStyle}>
-                        <h4 className="text-[var(--mm-paper)] mm-font-mono text-xs uppercase tracking-widest mb-2">Mock Answer</h4>
+                        <h4 className="text-[var(--mm-paper)] text-xs font-medium uppercase tracking-wide mb-2">Mock answer</h4>
                         <p className="text-[var(--mm-slate)] text-sm leading-relaxed">{toDisplayText(feedback.mockAnswer)}</p>
                     </div>
                 );
@@ -173,7 +173,7 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                 const suggestions = normalizeSuggestions(feedback.suggestions);
                 return (
                     <div className={cardStyle}>
-                        <h4 className="text-[var(--mm-paper)] mm-font-mono text-xs uppercase tracking-widest mb-2">Suggestions</h4>
+                        <h4 className="text-[var(--mm-paper)] text-xs font-medium uppercase tracking-wide mb-2">Suggestions</h4>
                         <ul className="text-[var(--mm-slate)] text-sm space-y-1 list-disc list-inside">
                             {suggestions.map((s, i) => <li key={i}>{s}</li>)}
                         </ul>
@@ -189,9 +189,9 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                 {/* Left Arrow */}
                 <button
                     onClick={prev}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 border border-[var(--mm-ink-line)] hover:border-[var(--mm-signal)] transition-colors"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full border border-[var(--mm-ink-line)] hover:border-[var(--mm-signal)] transition-colors bg-[var(--mm-ink)]"
                 >
-                    <ChevronLeft className="w-5 h-5 text-[var(--mm-paper)]" />
+                    <ChevronLeft className="w-4 h-4 text-[var(--mm-paper)]" />
                 </button>
 
                 {/* Card */}
@@ -206,19 +206,19 @@ const FeedbackCarousel = ({ feedback }: FeedbackCarouselProps) => {
                 {/* Right Arrow */}
                 <button
                     onClick={next}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 border border-[var(--mm-ink-line)] hover:border-[var(--mm-signal)] transition-colors"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full border border-[var(--mm-ink-line)] hover:border-[var(--mm-signal)] transition-colors bg-[var(--mm-ink)]"
                 >
-                    <ChevronRight className="w-5 h-5 text-[var(--mm-paper)]" />
+                    <ChevronRight className="w-4 h-4 text-[var(--mm-paper)]" />
                 </button>
             </div>
 
             {/* Dots */}
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
                 {cards.map((_, i) => (
                     <button
                         key={i}
                         onClick={() => goTo(i)}
-                        className={`h-1.5 rounded-none transition-all ${
+                        className={`h-1.5 rounded-full transition-all ${
                             i === activeIndex ? "bg-[var(--mm-signal)] w-6" : "bg-[var(--mm-ink-line)] w-1.5"
                         }`}
                     />

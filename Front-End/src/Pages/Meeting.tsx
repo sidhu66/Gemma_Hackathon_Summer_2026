@@ -13,6 +13,25 @@ import { clearChatLog, resetSpeaker, updateChatLog, updateSpeaker } from "@/redu
 import { handleWebSocketThunk } from "@/redux/features/chatLogThunk";
 import { convertTextToSpeech } from "@/utils/convertTextToSpeech";
 import AiCircle from "@/components/AiCircle";
+import { PhoneOff } from "lucide-react";
+/*
+Custom hooks allow us to store stateful logic in them. This means each
+hook has a independant section compared to every other
+call of the same hook. If hooks do not use 
+any other hooks declare them as a normal function.
+
+PURE FUNCTIONS:
+- make sure there is a complete understanding of the output based on the input
+- if we want to mutate a variable it must be defined in the scope of the function
+since each component renders asynchronously. Try to express logic with rendering alone
+useEffect should be last option.
+*/
+
+const formatElapsed = (seconds: number) => {
+  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const s = Math.floor(seconds % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+};
 import Waveform from "@/components/Waveform";
 
 export default function Meeting(): JSX.Element {
@@ -32,6 +51,8 @@ export default function Meeting(): JSX.Element {
   const [micPaused, setMicPaused] = useState(true);
   const [awaitingAiResponse, setAwaitingAiResponse] = useState(false);
   const [killSocket, setKillSocket] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const { currentAudio, setCurrentAudio } = useAudioQueue(setKillSocket);
 
@@ -81,6 +102,13 @@ export default function Meeting(): JSX.Element {
       dispatch(resetSpeaker());
       beginAiTurn();
       connect(import.meta.env.VITE_WEBSOCKET_URL);
+    }
+  };
+
+  const confirmEndInterview = () => {
+    setShowEndConfirm(false);
+    if (isConnected) {
+      setKillSocket(true);
     }
   };
 
@@ -152,6 +180,13 @@ export default function Meeting(): JSX.Element {
     }
   }, [awaitingAiResponse, currentAudio, audioQueue.length, isConnected]);
 
+  // Session timer — purely cosmetic, doesn't affect connection state.
+  useEffect(() => {
+    if (!isConnected) return;
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
   useEffect(() => {
     if (killSocket) {
       navigate("/results", {
@@ -202,6 +237,7 @@ export default function Meeting(): JSX.Element {
       userTurnActiveRef.current = false;
       sentTurnReadyRef.current = false;
       setMicPaused(true);
+      setElapsedSeconds(0);
     };
   }, [killSocket]);
 
@@ -226,6 +262,7 @@ export default function Meeting(): JSX.Element {
               : "Your turn — speak, then tap Done"}
         </span>
       </div>
+
       <div className="w-full h-[calc(100vh-100px)] flex flex-row items-center justify-between px-10 py-6 pr-24">
         <Video
           videoRef={videoRef}
@@ -246,6 +283,32 @@ export default function Meeting(): JSX.Element {
           micPaused={micPaused}
         />
       </div>
+
+      {/* End-interview confirmation */}
+      {showEndConfirm && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-white text-slate-900 rounded-2xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-semibold">End this interview?</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              We'll wrap up the session and take you straight to your debrief.
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowEndConfirm(false)}
+                className="text-sm font-medium px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              >
+                Keep going
+              </button>
+              <button
+                onClick={confirmEndInterview}
+                className="text-sm font-medium px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                End interview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
