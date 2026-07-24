@@ -35,7 +35,7 @@ export default function Navbar(): JSX.Element{
                 <Link to="/" className="flex flex-row items-center gap-2">
                     <Waveform bars={10} className="text-[var(--mm-signal)] h-4" />
                     <p className="mm-font-display text-xl text-[var(--mm-paper)]">
-                        MockMate
+                        CareerCoach
                     </p>
                 </Link>
 

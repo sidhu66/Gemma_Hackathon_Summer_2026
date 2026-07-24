@@ -6,7 +6,8 @@ import jwt from "jsonwebtoken";
 const saltRounds = 10;
 
 const createTokens = (id) => {
-    const accessToken = jwt.sign({ id: id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1m' });
+    // Long enough for a full mock interview without forcing mid-session reauth
+    const accessToken = jwt.sign({ id: id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '2h' });
     const refreshToken = jwt.sign({ id: id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
     return { accessToken, refreshToken };
 }
@@ -168,8 +169,8 @@ const refreshToken = async (req, res) => {
 
         if (result.rows.length === 0) return res.sendStatus(403);
 
-        const newAccessToken = jwt.sign({ id: id }, process.env.ACCESS_TOKEN_SECRET);
-        const newRefreshToken = jwt.sign({ id: id }, process.env.REFRESH_TOKEN_SECRET);
+        const newAccessToken = jwt.sign({ id: id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '2h' });
+        const newRefreshToken = jwt.sign({ id: id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
         await db.query('UPDATE refresh_tokens SET token = $2 WHERE user_id = $1', [id, newRefreshToken]);
 

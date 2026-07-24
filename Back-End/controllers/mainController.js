@@ -145,6 +145,40 @@ const evaluateInterview = async (userid, chatLog, interviewId) => {
   }
 };
 
+// Shared finalize used by HTTP endInterview and the WebSocket path (no JWT needed —
+// the WS connection was already authenticated when it opened).
+const finalizeInterview = async (userId, interviewId, chatLog) => {
+  if (!userId || !interviewId || !chatLog) {
+    throw new Error("Missing user, interview ID, or chat log.");
+  }
+
+  const evaluation = await evaluateInterview(userId, chatLog, interviewId);
+
+  if (evaluation.error) {
+    const err = new Error(evaluation.error);
+    err.details = evaluation.details;
+    throw err;
+  }
+
+  const { score, feedback } = evaluation;
+
+  const { rows } = await db.query(
+    "INSERT INTO QAOfInterview (interview_id, chat, feedback) VALUES ($1, $2, $3) RETURNING *",
+    [interviewId, JSON.stringify(chatLog), feedback]
+  );
+
+  await db.query(
+    "UPDATE interviews SET score = $1 WHERE id = $2 AND user_id = $3",
+    [score, interviewId, userId]
+  );
+
+  return {
+    record: rows[0],
+    score,
+    feedback,
+  };
+};
+
 // End Interview Function
 const endInterview = async (req, res) => {
   const { interviewId, chatLog } = req.body;
@@ -154,32 +188,13 @@ const endInterview = async (req, res) => {
   }
 
   try {
-    const evaluation = await evaluateInterview(req.user?.id, chatLog, interviewId);
-
-    if (evaluation.error) {
-      return res.status(500).json({ error: "Failed to evaluate interview." });
-    }
-
-    const { score, feedback } = evaluation;
-
-    const { rows } = await db.query(
-      "INSERT INTO QAOfInterview (interview_id, chat, feedback) VALUES ($1, $2, $3) RETURNING *",
-      [interviewId, JSON.stringify(chatLog), feedback]
-    );
-
-    await db.query(
-      "UPDATE interviews SET score = $1 WHERE id = $2",
-      [score, interviewId]
-    );
-
-    return res.status(201).json({
-      record: rows[0],
-      score: score,
-      feedback: feedback,
-    });
-
+    const result = await finalizeInterview(req.user?.id, interviewId, chatLog);
+    return res.status(201).json(result);
   } catch (error) {
     console.error(error);
+    if (error.message?.includes("Failed to evaluate")) {
+      return res.status(500).json({ error: "Failed to evaluate interview." });
+    }
     return res.status(500).json({ error: "Internal Server Error." });
   }
 };
@@ -277,4 +292,4 @@ const getInterviewDetail = async (req, res) => {
   }
 };
 
-export { startInterview, endInterview, textToSpeechDeepgram, getFeedback, getRecentInterview, searchInterviews, getInterviewDetail };
+export { startInterview, endInterview, finalizeInterview, textToSpeechDeepgram, getFeedback, getRecentInterview, searchInterviews, getInterviewDetail };

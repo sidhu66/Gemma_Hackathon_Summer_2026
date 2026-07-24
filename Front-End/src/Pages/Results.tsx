@@ -49,41 +49,87 @@ const Results = () => {
   useEffect(() => {
     if (!user) {
       navigate("/");
-    } else if (!fromMeeting) {
+      return;
+    }
+    if (!fromMeeting) {
       navigate("/home");
+      return;
+    }
+    if (!interviewId) {
+      setError("Missing interview id.");
+      setLoading(false);
+      return;
     }
 
-    const fetchInterviewData = async () => {
-      try {
-        const response = await api.get(
-          `/api/interview/feedback/${interviewId}`,
-        );
-        const result: interviewContent | undefined = response.data;
-        if (result) {
-          setError(null);
-          const data: dataForResults = {
-            id: result.id,
-            interview_id: result.interview_id,
-            chat: JSON.parse(result.chat),
-            feedback: result.feedback ? JSON.parse(result.feedback) : null,
-          };
-          setData(data);
-          setLoading(false);
-        } else {
-          setError("Data is null");
-          throw new Error("Data is null");
-        }
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        setError(message);
-        console.error("Error fetching interview data:", err);
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 60; // ~3 minutes at 3s interval
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const stop = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
       }
     };
 
-    const interval = setInterval(fetchInterviewData, 3000);
+    const fetchInterviewData = async () => {
+      attempts += 1;
+      try {
+        const response = await api.get(`/api/interview/feedback/${interviewId}`);
+        const result: interviewContent | undefined = response.data;
+        if (cancelled) return;
+
+        if (result?.feedback) {
+          setError(null);
+          setData({
+            id: result.id,
+            interview_id: result.interview_id,
+            chat: JSON.parse(result.chat),
+            feedback: JSON.parse(result.feedback),
+          });
+          setLoading(false);
+          stop();
+          return;
+        }
+
+        // Row may exist before feedback is ready — keep waiting
+        if (attempts >= maxAttempts) {
+          setError("Timed out waiting for your debrief. Please try again from Home.");
+          setLoading(false);
+          stop();
+        }
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const status = (err as { response?: { status?: number } })?.response?.status;
+
+        // 404 = feedback not saved yet (still generating) — keep polling
+        if (status === 404) {
+          if (attempts >= maxAttempts) {
+            setError("Debrief was not ready in time. The interview may not have saved — try running another session.");
+            setLoading(false);
+            stop();
+          }
+          return;
+        }
+
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("Error fetching interview data:", err);
+        if (attempts >= maxAttempts) {
+          setError(message);
+          setLoading(false);
+          stop();
+        }
+      }
+    };
+
+    intervalId = setInterval(fetchInterviewData, 3000);
     fetchInterviewData();
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      stop();
+    };
   }, [user, fromMeeting, interviewId, navigate]);
 
   // Comparison stat — reuses the same endpoint the dashboard already calls.

@@ -250,7 +250,7 @@ export default function Meeting(): JSX.Element {
             bars={12}
             className={isConnected && !micPaused ? "text-[var(--mm-signal)] h-4" : "text-[var(--mm-slate)] h-4"}
           />
-          <p className="mm-font-mono text-sm tracking-widest uppercase text-[var(--mm-paper)]">MockMate</p>
+          <p className="mm-font-mono text-sm tracking-widest uppercase text-[var(--mm-paper)]">CareerCoach</p>
         </div>
         <span className="mm-font-mono text-xs text-[var(--mm-slate)]">
           {!isConnected

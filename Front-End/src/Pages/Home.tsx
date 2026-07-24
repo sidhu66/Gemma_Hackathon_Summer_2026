@@ -138,7 +138,7 @@ const Home = () => {
                         </Button>
                         <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-lg bg-indigo-600" />
-                            <span className="font-semibold tracking-tight text-slate-900">MockMate</span>
+                            <span className="font-semibold tracking-tight text-slate-900">CareerCoach</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
