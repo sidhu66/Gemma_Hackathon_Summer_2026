@@ -6,13 +6,28 @@ import api from "@/lib/axios";
 import ReactMarkdown from "react-markdown";
 import ChatToView from "@/components/ChatToView";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import * as Sentry from "@sentry/react";
+import Waveform from "@/components/Waveform";
 
 const gradeColor = (grade: number) => {
-  if (grade >= 8) return { ring: "border-emerald-400", text: "text-emerald-400", bg: "bg-emerald-400/10" };
-  if (grade >= 5) return { ring: "border-amber-400", text: "text-amber-400", bg: "bg-amber-400/10" };
-  return { ring: "border-red-400", text: "text-red-400", bg: "bg-red-400/10" };
+  if (grade >= 8) return { text: "text-[var(--mm-teal)]", border: "border-[var(--mm-teal)]", bg: "bg-[var(--mm-teal-dim)]" };
+  if (grade >= 5) return { text: "text-[var(--mm-signal)]", border: "border-[var(--mm-signal)]", bg: "bg-[var(--mm-signal-dim)]" };
+  return { text: "text-[var(--mm-red)]", border: "border-[var(--mm-red)]", bg: "bg-[rgba(224,102,95,0.12)]" };
+};
+
+/** ReactMarkdown requires a string; the model sometimes returns objects. */
+const toMarkdownText = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
 };
 
 /** ReactMarkdown requires a string; the model sometimes returns objects. */
@@ -35,14 +50,12 @@ const Results = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Extract data passed through router state
   const interviewId: number = location.state?.interviewId;
   const state: MeetingState = location.state?.state;
   const fromMeeting: boolean | undefined = location.state?.fromMeeting;
 
   const user = useAppSelector((state) => state.user.user);
 
-  // States for data and loading
   const [data, setData] = useState<dataForResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +68,6 @@ const Results = () => {
       navigate("/home");
     }
 
-    // Function to fetch data with retry logic
     const fetchInterviewData = async () => {
       try {
         const response = await api.get(
@@ -82,39 +94,44 @@ const Results = () => {
       }
     };
 
-    const interval = setInterval(fetchInterviewData, 3000); // Retry every 5 seconds
+    const interval = setInterval(fetchInterviewData, 3000);
     fetchInterviewData();
 
-    return () => clearInterval(interval); // Clear interval on component unmount
+    return () => clearInterval(interval);
   }, [user, fromMeeting, interviewId, navigate]);
 
   const grade = data?.feedback?.grade ?? 0;
   const colors = gradeColor(grade);
 
   return (
-    <div className="min-h-screen w-full pb-16">
+    <div className="min-h-screen w-full pb-16 bg-[var(--mm-ink)] text-[var(--mm-paper)]">
       {/* Header */}
-      <div className="w-full text-white lg:px-40 md:px-20 px-10 flex justify-between items-center h-20 mb-2">
+      <div className="w-full lg:px-40 md:px-20 px-6 flex justify-between items-center h-20 mb-2 border-b border-[var(--mm-ink-line)]">
         <Button
           variant="ghost"
-          className="gap-2 text-gray-300 hover:text-white"
+          className="gap-2 text-[var(--mm-slate)] hover:text-[var(--mm-paper)] hover:bg-transparent"
           onClick={() => navigate("/home")}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back To Home
+          Back to dashboard
         </Button>
+        <div className="flex items-center gap-2">
+          <Waveform bars={10} className="text-[var(--mm-signal)] h-3" />
+          <span className="mm-font-mono text-xs uppercase tracking-widest text-[var(--mm-slate)]">Debrief</span>
+        </div>
       </div>
 
       <div className="w-full flex flex-col items-center px-4">
-        <div className="w-full max-w-4xl space-y-8">
+        <div className="w-full max-w-4xl space-y-8 pt-10">
           {/* Title Area */}
-          <div className="text-center space-y-1">
-            <h1 className="text-3xl font-bold text-white tracking-tight">
-              Interview Results
+          <div className="text-center space-y-2">
+            <span className="mm-eyebrow">Session complete</span>
+            <h1 className="mm-font-display text-4xl text-[var(--mm-paper)] tracking-tight">
+              Interview debrief
             </h1>
             {state?.position && (
-              <p className="text-gray-400 text-base">
-                {state.companyName && <span>{state.companyName} &middot; </span>}
+              <p className="text-[var(--mm-slate)] text-base mm-font-mono">
+                {state.companyName && <span>{state.companyName} · </span>}
                 {state.position}
               </p>
             )}
@@ -122,64 +139,60 @@ const Results = () => {
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
-              <p className="text-gray-400 text-sm animate-pulse">
-                Generating your feedback — this may take a few minutes...
+              <Loader2 className="w-8 h-8 text-[var(--mm-signal)] animate-spin" />
+              <p className="text-[var(--mm-slate)] text-sm mm-font-mono">
+                Generating your debrief — this may take a few minutes…
               </p>
             </div>
           ) : error ? (
-            <Card className="border-red-500/30 bg-red-500/5">
-              <CardContent className="py-8 text-center">
-                <p className="text-red-400">{error}</p>
-              </CardContent>
-            </Card>
+            <div className="mm-panel border-[var(--mm-red)]/40 py-8 text-center">
+              <p className="text-[var(--mm-red)]">{error}</p>
+            </div>
           ) : (
             <>
               {/* Grade + Summary Hero */}
               {data?.feedback ? (
-                <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/60 overflow-hidden">
-                  <CardContent className="p-8">
+                <div className="mm-panel overflow-hidden">
+                  <div className="p-8">
                     <div className="flex flex-col sm:flex-row items-center gap-8">
                       {/* Grade Ring */}
                       <div className="flex-shrink-0">
                         <div
-                          className={`w-28 h-28 rounded-full border-4 ${colors.ring} ${colors.bg} flex items-center justify-center`}
+                          className={`w-28 h-28 rounded-full border-4 ${colors.border} ${colors.bg} flex items-center justify-center`}
                         >
                           <div className="text-center">
-                            <span className={`text-4xl font-bold ${colors.text}`}>
+                            <span className={`text-4xl font-bold mm-font-display ${colors.text}`}>
                               {grade}
                             </span>
-                            <span className="text-gray-400 text-sm block -mt-1">/10</span>
+                            <span className="text-[var(--mm-slate)] text-sm block -mt-1">/10</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Summary */}
                       <div className="flex-1 text-center sm:text-left">
-                        <h2 className="text-xs uppercase tracking-widest text-indigo-300 font-semibold mb-2">
-                          Overall Summary
+                        <h2 className="mm-eyebrow mb-2">
+                          Overall summary
                         </h2>
-                        <div className="text-gray-200 text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
+                        <div className="text-[var(--mm-paper)] text-sm leading-relaxed prose prose-sm max-w-none prose-headings:text-[var(--mm-paper)] prose-p:text-[var(--mm-paper)] prose-strong:text-[var(--mm-paper)]">
                           <ReactMarkdown>{toMarkdownText(data.feedback.summary)}</ReactMarkdown>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ) : (
-                <Card className="border-gray-700/60 bg-gray-800/40">
-                  <CardContent className="py-8 text-center">
-                    <Loader2 className="w-6 h-6 text-indigo-400 animate-spin mx-auto mb-2" />
-                    <p className="text-gray-400 text-sm">Feedback loading...</p>
-                  </CardContent>
-                </Card>
+                <div className="mm-panel py-8 text-center">
+                  <Loader2 className="w-6 h-6 text-[var(--mm-signal)] animate-spin mx-auto mb-2" />
+                  <p className="text-[var(--mm-slate)] text-sm mm-font-mono">Feedback loading…</p>
+                </div>
               )}
 
               {/* STAR Evaluation */}
               {data?.feedback?.star && (
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-white tracking-tight px-1">
-                    STAR Evaluation
+                  <h2 className="mm-font-display text-xl text-[var(--mm-paper)] tracking-tight px-1">
+                    STAR evaluation
                   </h2>
                   <div className="grid gap-4 md:grid-cols-2">
                     {starKeys.map((key) => {
@@ -187,23 +200,21 @@ const Results = () => {
                       if (!category) return null;
                       const catColors = gradeColor(category.score);
                       return (
-                        <Card
+                        <div
                           key={key}
-                          className="bg-gray-800/50 border-gray-700/50 hover:border-indigo-500/30 transition-colors"
+                          className="mm-panel p-5 hover:border-[var(--mm-signal)]/40 transition-colors"
                         >
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-semibold text-indigo-200 flex items-center justify-between">
-                              <span className="capitalize">{key}</span>
-                              <span className={`text-sm font-bold ${catColors.text}`}>
-                                {category.score}/10
-                              </span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="mm-font-mono text-xs uppercase tracking-widest text-[var(--mm-slate)]">{key}</span>
+                            <span className={`text-sm font-bold mm-font-mono ${catColors.text}`}>
+                              {category.score}/10
+                            </span>
+                          </div>
+                          <div className="space-y-3">
                             {category.issues?.length > 0 && (
                               <div>
-                                <p className="text-xs uppercase tracking-wider text-red-400 font-semibold mb-1">Issues</p>
-                                <ul className="list-disc list-inside text-gray-300 text-sm space-y-1">
+                                <p className="text-xs uppercase tracking-wider text-[var(--mm-red)] mm-font-mono font-semibold mb-1">Issues</p>
+                                <ul className="list-disc list-inside text-[var(--mm-slate)] text-sm space-y-1">
                                   {category.issues.map((issue, i) => (
                                     <li key={i}>{issue}</li>
                                   ))}
@@ -212,16 +223,16 @@ const Results = () => {
                             )}
                             {category.improvements?.length > 0 && (
                               <div>
-                                <p className="text-xs uppercase tracking-wider text-emerald-400 font-semibold mb-1">Improvements</p>
-                                <ul className="list-disc list-inside text-gray-300 text-sm space-y-1">
+                                <p className="text-xs uppercase tracking-wider text-[var(--mm-teal)] mm-font-mono font-semibold mb-1">Improvements</p>
+                                <ul className="list-disc list-inside text-[var(--mm-slate)] text-sm space-y-1">
                                   {category.improvements.map((tip, i) => (
                                     <li key={i}>{tip}</li>
                                   ))}
                                 </ul>
                               </div>
                             )}
-                          </CardContent>
-                        </Card>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
@@ -231,16 +242,14 @@ const Results = () => {
               {/* Mock Answer */}
               {data?.feedback?.mockAnswer && (
                 <div className="space-y-3">
-                  <h2 className="text-lg font-semibold text-white tracking-tight px-1">
-                    Mock Answer
+                  <h2 className="mm-font-display text-xl text-[var(--mm-paper)] tracking-tight px-1">
+                    Mock answer
                   </h2>
-                  <Card className="bg-gray-800/50 border-gray-700/50">
-                    <CardContent className="p-6">
-                      <div className="text-gray-200 text-sm leading-relaxed prose prose-invert prose-sm max-w-none">
-                        <ReactMarkdown>{toMarkdownText(data.feedback.mockAnswer)}</ReactMarkdown>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="mm-panel p-6">
+                    <div className="text-[var(--mm-paper)] text-sm leading-relaxed prose prose-sm max-w-none prose-headings:text-[var(--mm-paper)] prose-p:text-[var(--mm-paper)] prose-strong:text-[var(--mm-paper)]">
+                      <ReactMarkdown>{toMarkdownText(data.feedback.mockAnswer)}</ReactMarkdown>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -254,21 +263,19 @@ const Results = () => {
                 if (suggestions.length === 0) return null;
                 return (
                 <div className="space-y-3">
-                  <h2 className="text-lg font-semibold text-white tracking-tight px-1">
+                  <h2 className="mm-font-display text-xl text-[var(--mm-paper)] tracking-tight px-1">
                     Suggestions
                   </h2>
-                  <Card className="bg-gray-800/50 border-gray-700/50">
-                    <CardContent className="p-6">
-                      <ul className="space-y-2">
-                        {suggestions.map((suggestion, i) => (
-                          <li key={i} className="flex items-start gap-2 text-gray-300 text-sm">
-                            <span className="text-indigo-400 mt-0.5">&#8226;</span>
-                            {suggestion}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
+                  <div className="mm-panel p-6">
+                    <ul className="space-y-2">
+                      {suggestions.map((suggestion, i) => (
+                        <li key={i} className="flex items-start gap-2 text-[var(--mm-slate)] text-sm">
+                          <span className="text-[var(--mm-signal)] mt-0.5">&#8226;</span>
+                          {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
                 );
               })()}
@@ -279,10 +286,10 @@ const Results = () => {
                   onClick={() => setChatOpen(!chatOpen)}
                   className="w-full flex items-center justify-between px-1 group"
                 >
-                  <h2 className="text-lg font-semibold text-white tracking-tight">
-                    Chat Log
+                  <h2 className="mm-font-display text-xl text-[var(--mm-paper)] tracking-tight">
+                    Chat log
                   </h2>
-                  <span className="text-gray-400 group-hover:text-white transition-colors">
+                  <span className="text-[var(--mm-slate)] group-hover:text-[var(--mm-paper)] transition-colors">
                     {chatOpen ? (
                       <ChevronUp className="w-5 h-5" />
                     ) : (
@@ -291,11 +298,9 @@ const Results = () => {
                   </span>
                 </button>
                 {chatOpen && (
-                  <Card className="bg-gray-800/50 border-gray-700/50">
-                    <CardContent className="p-6">
-                      <ChatToView interviewer={undefined} chatLog={data?.chat} />
-                    </CardContent>
-                  </Card>
+                  <div className="mm-panel p-6">
+                    <ChatToView interviewer={undefined} chatLog={data?.chat} />
+                  </div>
                 )}
               </div>
             </>

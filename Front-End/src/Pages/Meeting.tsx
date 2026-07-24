@@ -15,6 +15,7 @@ import { handleWebSocketThunk } from "@/redux/features/chatLogThunk";
 import { convertTextToSpeech } from "@/utils/convertTextToSpeech";
 import AiCircle from "@/components/AiCircle";
 import api from "@/lib/axios";
+import Waveform from "@/components/Waveform";
 /*
 Custom hooks allow us to store stateful logic in them. This means each
 hook has a independant section compared to every other
@@ -32,17 +33,13 @@ export default function Meeting(): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as MeetingState;
-  //used to hold the transcription for the current speaker and the transcription
   const { currentSpeaker, chatLog } = useAppSelector((state) => state.chatLog);
   const user = useAppSelector((state) => state.user.user);
   const dispatch = useAppDispatch();
-  //functions to see if the microphone is recording
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  //ref variable to hold the microphone
   const microphoneRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [killSocket, setKillSocket] = useState(false);
-  //custom hook to keep track of all the functionality related to the audio queue
 
   const { currentAudio, setCurrentAudio } = useAudioQueue(setKillSocket);
 
@@ -100,7 +97,6 @@ export default function Meeting(): JSX.Element {
   }, [currentAudio, currentSpeaker]);
 
   useEffect(() => {
-    // Navigate to results page
     if (killSocket) {
       navigate("/results", {
         state: {
@@ -110,10 +106,7 @@ export default function Meeting(): JSX.Element {
         },
       });
     }
-    // Cleanup function to run when the component unmounts or when `killSocket` changes
     return () => {
-      // Stop the microphone if it's still active
-
       setCurrentAudio((audio) => {
         if (audio) {
           audio.src = "";
@@ -125,13 +118,11 @@ export default function Meeting(): JSX.Element {
         microphoneRef.current = null;
       }
 
-      // Stop all tracks in the media stream to release the microphone or camera
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
 
-      // Disconnect the WebSocket if it's still connected
       if (isConnected) {
         socketRef.current?.send(
           JSON.stringify({
@@ -142,10 +133,8 @@ export default function Meeting(): JSX.Element {
         disconnect();
       }
 
-      // Stop the video stream
       stopVideo();
 
-      // Reset state to default values
       dispatch(clearQueue());
       dispatch(resetSpeaker());
       dispatch(clearChatLog());
@@ -156,9 +145,19 @@ export default function Meeting(): JSX.Element {
   }, [killSocket]);
 
   return (
-    <div className="h-[100vh] w-[100vw] absolute top-0 left-0 z-10">
-      <div className="w-full h-4 flex flex-row justify-between items-center p-8">
-        <p className="font-bold text-lg">InterviewME</p>
+    <div className="h-[100vh] w-[100vw] absolute top-0 left-0 z-10 bg-[var(--mm-ink)] text-[var(--mm-paper)]">
+      <div className="w-full h-16 flex flex-row justify-between items-center px-8 border-b border-[var(--mm-ink-line)]">
+        <div className="flex items-center gap-2">
+          <Waveform
+            live={isConnected}
+            bars={12}
+            className={isConnected ? "text-[var(--mm-signal)] h-4" : "text-[var(--mm-slate)] h-4"}
+          />
+          <p className="mm-font-mono text-sm tracking-widest uppercase text-[var(--mm-paper)]">MockMate</p>
+        </div>
+        <span className="mm-font-mono text-xs text-[var(--mm-slate)]">
+          {isConnected ? "Recording session…" : "Not connected"}
+        </span>
       </div>
       <div className="w-full h-[calc(100vh-100px)] flex flex-row items-center justify-between px-10 py-6 pr-24">
         <Video

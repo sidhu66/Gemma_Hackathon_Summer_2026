@@ -22,7 +22,7 @@ type Interview = {
 const chartConfig = {
   score: {
     label: "Score",
-    color: "#4b0082",
+    color: "#c08a2e",
   },
 } satisfies ChartConfig
 
@@ -36,19 +36,20 @@ export function Graph({ interviews }: { interviews: Interview[] }) {
   );
 
   return (
-    <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-      <BarChart accessibilityLayer data={chartData} barSize={50}>
-        <CartesianGrid vertical={false} />
+    <ChartContainer config={chartConfig} className="min-h-[190px] w-full">
+      <BarChart accessibilityLayer data={chartData} barSize={40}>
+        <CartesianGrid vertical={false} stroke="#e9e4d4" />
         <XAxis
           dataKey="institution"
           tickLine={false}
           tickMargin={10}
           axisLine={false}
+          tick={{ fill: "#756f5e", fontFamily: "var(--font-mono)", fontSize: 11 }}
         />
         <YAxis domain={[0, 10]} hide />
         <ChartTooltip content={<ChartTooltipContent />} />
         <ChartLegend content={<ChartLegendContent />} />
-        <Bar dataKey="score" fill="var(--color-score)" radius={4} />
+        <Bar dataKey="score" fill="var(--color-score)" radius={2} />
       </BarChart>
     </ChartContainer>
   )

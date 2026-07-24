@@ -12,20 +12,20 @@ const Video = ({ videoRef, stopVideo, startVideo, isRecording }: videoProps) => 
 
     return (
         <div className="flex items-end justify-center h-full">
-            <div className="relative w-[300px] h-[180px] rounded-2xl">
+            <div className="relative w-[300px] h-[180px] border border-[var(--mm-ink-line)]">
                 <video
-                    className="rounded-2xl w-full h-full object-cover overflow-hidden max-h-[87vh]"
+                    className="w-full h-full object-cover overflow-hidden max-h-[87vh]"
                     ref={videoRef}
                     autoPlay
                     playsInline
                 />
-                <div className="absolute right-0 bottom-0 h-10 w-16 bg-black/60 z-20 rounded-3xl flex flex-row items-center justify-evenly">
+                <div className="absolute right-0 bottom-0 h-9 px-3 bg-[var(--mm-ink)]/85 border-t border-l border-[var(--mm-ink-line)] z-20 flex flex-row items-center gap-2">
                     {isRecording ? (
-                        <BiMicrophone className="rounded-full scale-[1.2] text-white text-[14px] font-light" />
+                        <BiMicrophone className="scale-110 text-[var(--mm-signal)] text-[14px]" />
                     ) : (
-                        <BiMicrophoneOff className="rounded-full scale-[1.2] text-white text-[14px] font-light" />
+                        <BiMicrophoneOff className="scale-110 text-[var(--mm-slate)] text-[14px]" />
                     )}
-                    <p className="text-md font-light text-white">You</p>
+                    <p className="mm-font-mono text-xs uppercase tracking-widest text-[var(--mm-paper)]">You</p>
                 </div>
             </div>
         </div>

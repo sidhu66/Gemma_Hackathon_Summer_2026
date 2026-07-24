@@ -14,6 +14,7 @@ import { useAppDispatch } from './redux/store';
 import { addUser, removeUser } from "@/redux/features/userSlice";
 import { useAppSelector } from './redux/store';
 import api from './lib/axios';
+import Waveform from '@/components/Waveform';
 
 type userType = {
   email: string,
@@ -43,7 +44,14 @@ function App(): JSX.Element {
   }, [dispatch]);
 
   if (!isUserChecked) {
-    return <div>Loading...</div>; // or any other loading indicator
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center gap-4 bg-[var(--mm-ink)]">
+        <Waveform live bars={20} className="text-[var(--mm-signal)] h-8" />
+        <p className="mm-font-mono text-xs tracking-[0.2em] uppercase text-[var(--mm-slate)]">
+          Cueing up MockMate…
+        </p>
+      </div>
+    );
   }
 
   const hideNavbarRoutes = ['/home', '/meeting', '/intake', '/results'];
@@ -52,7 +60,7 @@ function App(): JSX.Element {
   return (
     <>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <div className='min-h-screen w-full'>
+        <div className='min-h-screen w-full bg-[var(--mm-ink)] text-[var(--mm-paper)]'>
           {shouldShowNavbar && <Navbar />}
           <Routes>
             <Route path='/login' element={!user ? <Login /> : <Navigate to='/home' />} />
