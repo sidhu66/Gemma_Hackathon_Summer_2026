@@ -1,21 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
+/*
+  Token system
+  ------------
+  Default (:root) is the light "clean SaaS" theme used across the whole
+  app. `.mm-call` is a scoped override applied only to the Meeting screen,
+  which stays a dark, immersive call UI (like a video-call app). Because
+  every component reads these as CSS variables, nesting a component inside
+  `.mm-call` automatically flips it dark — no per-component color edits
+  needed.
+*/
 :root {
-  --mm-ink: #14161f;
-  --mm-ink-soft: #1c1f2b;
-  --mm-ink-line: rgba(243, 239, 228, 0.1);
-  --mm-paper: #f3efe4;
-  --mm-paper-dim: #d9d3c2;
-  --mm-signal: #e7a33e;
-  --mm-signal-dim: rgba(231, 163, 62, 0.16);
-  --mm-teal: #4fa69c;
-  --mm-teal-dim: rgba(79, 166, 156, 0.16);
-  --mm-slate: #98a0b3;
-  --mm-red: #e0665f;
+  --mm-ink: #ffffff;
+  --mm-ink-soft: #f8fafc;
+  --mm-ink-line: #e2e8f0;
+  --mm-paper: #0f172a;
+  --mm-paper-dim: #64748b;
+  --mm-signal: #4f46e5;
+  --mm-signal-dim: #eef2ff;
+  --mm-teal: #059669;
+  --mm-teal-dim: #ecfdf5;
+  --mm-slate: #64748b;
+  --mm-red: #dc2626;
 
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* Dark scope for the live-call screen only */
+.mm-call {
+  --mm-ink: #0b0f19;
+  --mm-ink-soft: #161b28;
+  --mm-ink-line: rgba(255, 255, 255, 0.1);
+  --mm-paper: #f8fafc;
+  --mm-paper-dim: #cbd5e1;
+  --mm-signal: #818cf8;
+  --mm-signal-dim: rgba(129, 140, 248, 0.16);
+  --mm-teal: #34d399;
+  --mm-teal-dim: rgba(52, 211, 153, 0.16);
+  --mm-slate: #94a3b8;
+  --mm-red: #f87171;
 }
 
 #root {
@@ -42,32 +67,36 @@ body {
 
 .mm-font-display {
   font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .mm-font-mono {
   font-family: var(--font-mono);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 .mm-eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.22em;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--mm-signal);
 }
 
 .mm-panel {
-  background: var(--mm-ink-soft);
+  background: var(--mm-ink);
   border: 1px solid var(--mm-ink-line);
-  border-radius: 0.5rem;
+  border-radius: 1rem;
 }
 
 .mm-tape {
   border-top: 1px dashed var(--mm-ink-line);
 }
 
-/* Waveform bars — the recurring signature motif */
+/* Waveform bars — the recurring signature motif. Kept as a real, used
+   accent (nav logo, hero, call screen), just restrained rather than
+   sprinkled everywhere. */
 .mm-waveform {
   display: flex;
   align-items: center;
@@ -96,26 +125,27 @@ body {
 }
 
 .mm-btn-primary {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.875rem;
   background: var(--mm-signal);
-  color: var(--mm-ink);
+  color: white;
   border: 1px solid var(--mm-signal);
-  transition: background 150ms ease, color 150ms ease;
+  border-radius: 0.5rem;
+  transition: background 150ms ease, opacity 150ms ease;
 }
 .mm-btn-primary:hover {
-  background: transparent;
-  color: var(--mm-signal);
+  opacity: 0.9;
 }
 
 .mm-btn-ghost {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.875rem;
   background: transparent;
   color: var(--mm-paper);
   border: 1px solid var(--mm-ink-line);
+  border-radius: 0.5rem;
   transition: border-color 150ms ease, color 150ms ease;
 }
 .mm-btn-ghost:hover {

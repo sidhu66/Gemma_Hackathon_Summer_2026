@@ -209,11 +209,22 @@ const getFeedback = async (req, res) => {
 const getRecentInterview = async (req, res) => {
   try {
     const { rows: recentInterviews } = await db.query(
-      'SELECT id, institution, typeofinterview, score, interview_date FROM interviews WHERE score IS NOT NULL ORDER BY interview_date DESC LIMIT 3'
+      `SELECT id, institution, typeofinterview, score, interview_date
+       FROM interviews
+       WHERE user_id = $1 AND score IS NOT NULL
+       ORDER BY interview_date DESC, id DESC
+       LIMIT 50`,
+      [req.user.id]
     );
 
     const { rows: latestInterviewRows } = await db.query(
-      'SELECT q.chat, q.feedback FROM QAOfInterview q JOIN interviews i ON i.id = q.interview_id ORDER BY i.interview_date DESC, i.id DESC LIMIT 1'
+      `SELECT q.chat, q.feedback
+       FROM QAOfInterview q
+       JOIN interviews i ON i.id = q.interview_id
+       WHERE i.user_id = $1
+       ORDER BY i.interview_date DESC, i.id DESC
+       LIMIT 1`,
+      [req.user.id]
     );
 
     res.status(200).json({
@@ -252,8 +263,12 @@ const getInterviewDetail = async (req, res) => {
   try {
     const { id } = req.params;
     const { rows } = await db.query(
-      `SELECT q.chat, q.feedback FROM QAOfInterview q WHERE q.interview_id = $1 LIMIT 1`,
-      [id]
+      `SELECT q.chat, q.feedback
+       FROM QAOfInterview q
+       JOIN interviews i ON i.id = q.interview_id
+       WHERE q.interview_id = $1 AND i.user_id = $2
+       LIMIT 1`,
+      [id, req.user.id]
     );
     res.status(200).json({ interview: rows[0] || null });
   } catch (err) {
