@@ -46,10 +46,15 @@ export default function Landing(): JSX.Element {
       {/* ---- Nav ---- */}
       <nav className="sticky top-0 z-20 w-full border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            aria-label="MockMate home"
+          >
             <div className="w-7 h-7 rounded-lg bg-indigo-600" />
             <span className="font-semibold tracking-tight">MockMate</span>
-          </div>
+          </button>
           <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
             <a href="#how-it-works" className="hover:text-slate-900">How it works</a>
             <a href="#features" className="hover:text-slate-900">Features</a>
@@ -225,10 +230,15 @@ export default function Landing(): JSX.Element {
       </section>
 
       <footer className="flex flex-col md:flex-row gap-4 w-full justify-between px-6 py-8 items-center border-t border-slate-100 text-sm text-slate-500">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          aria-label="MockMate home"
+        >
           <div className="w-6 h-6 rounded-md bg-indigo-600" />
           <span className="font-medium text-slate-900 text-sm">MockMate</span>
-        </div>
+        </button>
         <p className="text-center md:text-right text-xs">
           © 2026 MockMate. All rights reserved.
         </p>
