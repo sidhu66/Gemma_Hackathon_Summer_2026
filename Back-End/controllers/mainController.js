@@ -31,7 +31,7 @@ const startInterview = async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      "INSERT INTO interviews (user_id, typeofinterview, institution, interview_date, intake) VALUES ($1, $2, $3, $4, $5) RETURNING *", 
+      "INSERT INTO interviews (user_id, typeofinterview, institution, interview_date, intake) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       [user.id, typeofinterview, institution, new Date(), JSON.stringify(intake)]
     );
 
@@ -43,15 +43,26 @@ const startInterview = async (req, res) => {
 };
 
 // Text-to-Speech Deepgram Function
+const sanitizeForTts = (text) =>
+  String(text || "")
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+    .replace(/[\u2013\u2014\u2212]/g, "-")
+    .replace(/\u2026/g, "...")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 const textToSpeechDeepgram = async (req, res) => {
   const { text, chunkNumber, model } = req.body;
+  const cleaned = sanitizeForTts(text);
 
-  if (!text || typeof text !== 'string' || text.trim() === '') {
+  if (!cleaned) {
     return res.status(400).send("Invalid text input");
   }
 
   try {
-    const response = await deepgram.speak.request({ text }, { model });
+    const response = await deepgram.speak.request({ text: cleaned }, { model });
     const stream = await response.getStream();
 
     let audioData = [];
@@ -68,7 +79,7 @@ const textToSpeechDeepgram = async (req, res) => {
       chunkNumber: chunkNumber,
     });
   } catch (e) {
-    console.error(e);
+    console.error("TTS error:", e?.message || e, { chunkNumber, model, textPreview: cleaned.slice(0, 120) });
     if (e.status == 400) {
       return res.status(e.status).send("Text data could not be processed");
     }
@@ -97,9 +108,9 @@ const parseFeedbackJson = (raw) => {
 const evaluateInterview = async (userid, chatLog, interviewId) => {
   const model = ollamaModel;
   const intakeResult = await db.query(
-        "SELECT intake FROM interviews WHERE id = $1 AND user_id = $2",
-        [interviewId, userid]
-      );
+    "SELECT intake FROM interviews WHERE id = $1 AND user_id = $2",
+    [interviewId, userid]
+  );
   try {
     const intakeData = intakeResult.rows[0]?.intake || {};
     const prompt = JSON.stringify({
@@ -177,78 +188,78 @@ const getFeedback = async (req, res) => {
   const interviewId = req.params.id;
 
   try {
-      // Query feedback from the database
-      const { rows } = await db.query(
-          "SELECT * FROM QAOfInterview WHERE interview_id = $1",
-          [interviewId]
-      );
+    // Query feedback from the database
+    const { rows } = await db.query(
+      "SELECT * FROM QAOfInterview WHERE interview_id = $1",
+      [interviewId]
+    );
 
-      if (rows.length === 0) {
-          return res.status(404).json({ error: "No data found for this interview." });
-      }
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "No data found for this interview." });
+    }
 
-      // Return the feedback and chat data
-      return res.status(200).json(rows[0]);
+    // Return the feedback and chat data
+    return res.status(200).json(rows[0]);
   } catch (error) {
-      console.error("Database error:", error);
-      return res.status(500).json({ error: "Internal Server Error" });
+    console.error("Database error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 }
 
 const getRecentInterview = async (req, res) => {
-    try{
-      const { rows: recentInterviews } = await db.query(
-        'SELECT id, institution, typeofinterview, score, interview_date FROM interviews WHERE score IS NOT NULL ORDER BY interview_date DESC LIMIT 3'
-      );
+  try {
+    const { rows: recentInterviews } = await db.query(
+      'SELECT id, institution, typeofinterview, score, interview_date FROM interviews WHERE score IS NOT NULL ORDER BY interview_date DESC LIMIT 3'
+    );
 
-      const { rows: latestInterviewRows } = await db.query(
-        'SELECT q.chat, q.feedback FROM QAOfInterview q JOIN interviews i ON i.id = q.interview_id ORDER BY i.interview_date DESC, i.id DESC LIMIT 1'
-      );
+    const { rows: latestInterviewRows } = await db.query(
+      'SELECT q.chat, q.feedback FROM QAOfInterview q JOIN interviews i ON i.id = q.interview_id ORDER BY i.interview_date DESC, i.id DESC LIMIT 1'
+    );
 
-      res.status(200).json({
-        recentInterviews,
-        latestInterview: latestInterviewRows[0] || null,
-      });
-    }catch(err){
-      console.log("Database error: ", err);
-      res.status(500).json({error: "Internal Server Error"})
-    }
+    res.status(200).json({
+      recentInterviews,
+      latestInterview: latestInterviewRows[0] || null,
+    });
+  } catch (err) {
+    console.log("Database error: ", err);
+    res.status(500).json({ error: "Internal Server Error" })
+  }
 };
 
 
 const searchInterviews = async (req, res) => {
-    try {
-        const { q } = req.query;
-        if (!q || typeof q !== 'string' || q.trim().length === 0) {
-            return res.status(200).json({ results: [] });
-        }
-        const { rows } = await db.query(
-            `SELECT i.id, i.institution, i.typeofinterview, i.score, i.interview_date
+  try {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string' || q.trim().length === 0) {
+      return res.status(200).json({ results: [] });
+    }
+    const { rows } = await db.query(
+      `SELECT i.id, i.institution, i.typeofinterview, i.score, i.interview_date
              FROM interviews i
              WHERE i.user_id = $1 AND i.score IS NOT NULL AND i.institution ILIKE $2
              ORDER BY i.interview_date DESC
              LIMIT 10`,
-            [req.user.id, `%${q.trim()}%`]
-        );
-        res.status(200).json({ results: rows });
-    } catch (err) {
-        console.log("Search error: ", err);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
+      [req.user.id, `%${q.trim()}%`]
+    );
+    res.status(200).json({ results: rows });
+  } catch (err) {
+    console.log("Search error: ", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 const getInterviewDetail = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { rows } = await db.query(
-            `SELECT q.chat, q.feedback FROM QAOfInterview q WHERE q.interview_id = $1 LIMIT 1`,
-            [id]
-        );
-        res.status(200).json({ interview: rows[0] || null });
-    } catch (err) {
-        console.log("Detail error: ", err);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
+  try {
+    const { id } = req.params;
+    const { rows } = await db.query(
+      `SELECT q.chat, q.feedback FROM QAOfInterview q WHERE q.interview_id = $1 LIMIT 1`,
+      [id]
+    );
+    res.status(200).json({ interview: rows[0] || null });
+  } catch (err) {
+    console.log("Detail error: ", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-export { startInterview, endInterview, textToSpeechDeepgram, getFeedback, getRecentInterview, searchInterviews, getInterviewDetail};
+export { startInterview, endInterview, textToSpeechDeepgram, getFeedback, getRecentInterview, searchInterviews, getInterviewDetail };

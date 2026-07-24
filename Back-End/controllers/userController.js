@@ -13,43 +13,43 @@ const createTokens = (id) => {
 
 
 //email and password_hash
-const signUpQuery = async (email, password, passwordConfirm) =>{
-    if(!email || !password || !passwordConfirm){
+const signUpQuery = async (email, password, passwordConfirm) => {
+    if (!email || !password || !passwordConfirm) {
         throw Error('All fields must be filled');
     }
 
-    if(!validator.isEmail(email)){
+    if (!validator.isEmail(email)) {
         throw Error('Email is not valid');
     }
 
-    if(password !== passwordConfirm){
+    if (password !== passwordConfirm) {
         throw Error('Passwords do not match');
     }
-    
-    if(!validator.isStrongPassword(password)){
+
+    if (!validator.isStrongPassword(password)) {
         throw Error('Password is not strong enough');
     }
 
-    try{
+    try {
         const data = await db.query("SELECT email FROM users WHERE email = $1", [email]);
 
-        if(data.rows.length != 0){
+        if (data.rows.length != 0) {
             throw Error('User with email ', email, ' already exists');
         }
-        
+
         const salt = await bcrypt.genSalt(saltRounds);
         const hash = await bcrypt.hash(password, salt);
 
-        try{
+        try {
             const response = await db.query('INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING *', [email, hash]);
             return response.rows[0];
-        }catch(error){
+        } catch (error) {
             console.log("Error creating user.")
         }
-    } catch(error){
-        if(error instanceof Error){
+    } catch (error) {
+        if (error instanceof Error) {
             throw Error('User with email ' + email + ' already exists');
-        } else{
+        } else {
             console.log(error.message);
             //make this into a custom error later
             throw Error('Internal Server Error');
@@ -57,27 +57,27 @@ const signUpQuery = async (email, password, passwordConfirm) =>{
     }
 }
 
-const loginUser = async (req, res)=>{
-    const {email, password} = req.body;
+const loginUser = async (req, res) => {
+    const { email, password } = req.body;
 
-    if(!email || !password){
+    if (!email || !password) {
         throw Error('All fields must be filled.');
     }
-    
-    try{
+
+    try {
         const user = await db.query('SELECT * FROM users WHERE email = $1', [email]);
 
-        if(user.rows.length === 0){
+        if (user.rows.length === 0) {
             throw Error('Incorrect email');
         }
 
         const match = await bcrypt.compare(password, user.rows[0].password_hash);
-    
-        if(!match){
+
+        if (!match) {
             throw Error('Incorrect password');
         }
 
-        const {accessToken, refreshToken} = createTokens(user.rows[0].id);
+        const { accessToken, refreshToken } = createTokens(user.rows[0].id);
 
         await db.query('INSERT INTO refresh_tokens (user_id, token) VALUES ($1, $2)', [user.rows[0].id, refreshToken]);
 
@@ -96,22 +96,22 @@ const loginUser = async (req, res)=>{
             sameSite: 'Strict'
         });
 
-        return res.status(200).json({ email: email});
+        return res.status(200).json({ email: email });
 
-    } catch(error){
-        if(error instanceof Error){
-            return res.status(401).json({error: error.message});
-        } else{
+    } catch (error) {
+        if (error instanceof Error) {
+            return res.status(401).json({ error: error.message });
+        } else {
             console.log(error.message);
             //make this into a custom error later
-            return res.status(401).json({error: 'Internal Server error'});
+            return res.status(401).json({ error: 'Internal Server error' });
         }
     }
 }
 
-const registerUser = async (req, res)=>{
-    try{
-        const {email, password, passwordConfirm} = req.body;
+const registerUser = async (req, res) => {
+    try {
+        const { email, password, passwordConfirm } = req.body;
 
         const user = await signUpQuery(email, password, passwordConfirm);
 
@@ -131,42 +131,42 @@ const registerUser = async (req, res)=>{
             sameSite: 'Strict'
         });
 
-        return res.status(200).json({email: email});
-    } catch(error){
+        return res.status(200).json({ email: email });
+    } catch (error) {
         return res.status(401).json({ error: error.message });
     }
-    
+
 }
 
-const sessionCheck = async (req, res) =>{
+const sessionCheck = async (req, res) => {
     const token = req.cookies.accessToken;
 
-    if(!token){
-        return res.status(401).json({ error: 'No token found'});
+    if (!token) {
+        return res.status(401).json({ error: 'No token found' });
     }
 
-    try{
-        const {id} = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        const {rows} = await db.query('SELECT email FROM users WHERE id = $1', [id])
-        return res.status(200).json({ email: rows[0].email});
-    } catch(err){
+    try {
+        const { id } = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const { rows } = await db.query('SELECT email FROM users WHERE id = $1', [id])
+        return res.status(200).json({ email: rows[0].email });
+    } catch (err) {
         return res.status(401).json({ error: 'Invalid token' });
     }
 }
 
-const refreshToken = async (req, res) =>{
+const refreshToken = async (req, res) => {
     const { refreshToken } = req.cookies;
-    
-    if(!refreshToken){
-        return res.status(401).json({error: 'User is not signed in'});
+
+    if (!refreshToken) {
+        return res.status(401).json({ error: 'User is not signed in' });
     }
 
-    try{
-        const {id} = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    try {
+        const { id } = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
         const result = await db.query("SELECT * FROM refresh_tokens WHERE user_id = $1 AND token = $2", [id, refreshToken]);
 
-        if(result.rows.length === 0) return res.sendStatus(403);
+        if (result.rows.length === 0) return res.sendStatus(403);
 
         const newAccessToken = jwt.sign({ id: id }, process.env.ACCESS_TOKEN_SECRET);
         const newRefreshToken = jwt.sign({ id: id }, process.env.REFRESH_TOKEN_SECRET);
@@ -185,15 +185,15 @@ const refreshToken = async (req, res) =>{
             sameSite: 'Strict'
         });
 
-        return res.status(200).json({accessToken: newAccessToken});
-    } catch(error){
-        return res.status(404).json({error: "Refresh token expired!"});
+        return res.status(200).json({ accessToken: newAccessToken });
+    } catch (error) {
+        return res.status(404).json({ error: "Refresh token expired!" });
     }
 }
 
 const logoutUser = async (req, res) => {
     const { refreshToken } = req.cookies;
-    try{
+    try {
         await db.query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
 
         res.clearCookie('accessToken', {
@@ -211,10 +211,10 @@ const logoutUser = async (req, res) => {
         });
 
         return res.status(200).json({ message: 'Logged out successfully' });
-    }catch(e){
-        return res.status(500).json({message: 'Error deleting data from database'});
+    } catch (e) {
+        return res.status(500).json({ message: 'Error deleting data from database' });
     }
 
 }
 
-export {loginUser, registerUser, logoutUser, sessionCheck, refreshToken};
+export { loginUser, registerUser, logoutUser, sessionCheck, refreshToken };

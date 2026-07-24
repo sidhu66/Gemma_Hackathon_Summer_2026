@@ -12,7 +12,14 @@ const isJSON = (str: string) => {
 };
 
 
-const useWebSocket = (handleWebSocketMessage: (data: any) => void, microphoneRef: React.MutableRefObject<MediaRecorder | null>, streamRef: React.MutableRefObject<MediaStream | null>, setIsRecording: React.Dispatch<React.SetStateAction<boolean>>, state: MeetingState) => {
+const useWebSocket = (
+    handleWebSocketMessage: (data: any) => void,
+    microphoneRef: React.MutableRefObject<MediaRecorder | null>,
+    streamRef: React.MutableRefObject<MediaStream | null>,
+    setIsRecording: React.Dispatch<React.SetStateAction<boolean>>,
+    state: MeetingState,
+    micPausedRef: React.MutableRefObject<boolean>
+) => {
     const socketRef = useRef<null | WebSocket>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [interviewId, setInterviewId] = useState<number | null>(null);
@@ -31,7 +38,7 @@ const useWebSocket = (handleWebSocketMessage: (data: any) => void, microphoneRef
                     console.error("WebSocket is not open or 'this' is not the WebSocket instance.");
                 }
 
-                await start(socketRef.current as WebSocket, microphoneRef, streamRef, setIsRecording);
+                await start(socketRef.current as WebSocket, microphoneRef, streamRef, setIsRecording, micPausedRef);
             });
         } catch (error) {
             console.error('WebSocket connection failed:', error);
