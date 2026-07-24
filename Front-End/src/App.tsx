@@ -46,7 +46,7 @@ function App(): JSX.Element {
       <div className="min-h-screen w-full flex flex-col items-center justify-center gap-4 bg-[var(--mm-ink)]">
         <Waveform live bars={20} className="text-[var(--mm-signal)] h-8" />
         <p className="text-xs tracking-[0.15em] uppercase text-[var(--mm-slate)]">
-          Cueing up MockMate…
+          Cueing up CareerCoach…
         </p>
       </div>
     );

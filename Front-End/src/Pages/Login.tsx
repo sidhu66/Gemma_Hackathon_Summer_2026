@@ -78,10 +78,10 @@ function Login(): JSX.Element {
                         type="button"
                         onClick={() => navigate("/")}
                         className="flex items-center gap-2 hover:opacity-80 transition-opacity text-left"
-                        aria-label="MockMate home"
+                        aria-label="CareerCoach home"
                     >
                         <div className="w-7 h-7 rounded-lg bg-white/20" />
-                        <span className="font-semibold tracking-tight">MockMate</span>
+                        <span className="font-semibold tracking-tight">CareerCoach</span>
                     </button>
                     <div>
                         <p className="text-3xl font-semibold tracking-tight leading-snug max-w-md">
@@ -101,10 +101,10 @@ function Login(): JSX.Element {
                             type="button"
                             onClick={() => navigate("/")}
                             className="lg:hidden flex items-center gap-2 mb-10 hover:opacity-80 transition-opacity"
-                            aria-label="MockMate home"
+                            aria-label="CareerCoach home"
                         >
                             <div className="w-7 h-7 rounded-lg bg-indigo-600" />
-                            <span className="font-semibold tracking-tight text-slate-900">MockMate</span>
+                            <span className="font-semibold tracking-tight text-slate-900">CareerCoach</span>
                         </button>
 
                         <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-1">Welcome back</h1>
@@ -172,13 +172,13 @@ function Login(): JSX.Element {
                     type="button"
                     onClick={() => navigate("/")}
                     className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                    aria-label="MockMate home"
+                    aria-label="CareerCoach home"
                 >
                     <div className="w-6 h-6 rounded-md bg-indigo-600" />
-                    <span className="font-medium text-slate-900 text-sm">MockMate</span>
+                    <span className="font-medium text-slate-900 text-sm">CareerCoach</span>
                 </button>
                 <p className="text-center md:text-right text-xs">
-                    © 2026 MockMate. All rights reserved.
+                    © 2026 CareerCoach. All rights reserved.
                 </p>
             </footer>
         </div>

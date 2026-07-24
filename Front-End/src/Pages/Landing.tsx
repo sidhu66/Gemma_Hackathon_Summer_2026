@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 const steps = [
-  { n: "1", title: "Set up the role", copy: "Tell MockMate the company, the position, and the job description. Questions adjust to match." },
+  { n: "1", title: "Set up the role", copy: "Tell CareerCoach the company, the position, and the job description. Questions adjust to match." },
   { n: "2", title: "Run the call", copy: "A conversational AI interviewer asks follow-ups the way a real one would, at a real pace." },
   { n: "3", title: "Read the debrief", copy: "Get a STAR-based score the moment you finish — what landed, what didn't, and why." },
 ];
@@ -26,7 +26,7 @@ const features = [
 ];
 
 const faqs = [
-  { q: "What kind of interviews does MockMate run?", a: "Behavioral interviews scored against the STAR framework, tailored to the role and company you provide." },
+  { q: "What kind of interviews does CareerCoach run?", a: "Behavioral interviews scored against the STAR framework, tailored to the role and company you provide." },
   { q: "How long does a session take?", a: "Most sessions run 15–25 minutes, followed by an instant scored debrief." },
   { q: "Can I retake an interview for the same role?", a: "Yes — run it as many times as you want. Every attempt is saved to your dashboard so you can track improvement." },
   { q: "Do I need a webcam?", a: "A camera is optional. Audio is what the interviewer listens to and scores." },
@@ -50,10 +50,10 @@ export default function Landing(): JSX.Element {
             type="button"
             onClick={() => navigate("/")}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-            aria-label="MockMate home"
+            aria-label="CareerCoach home"
           >
             <div className="w-7 h-7 rounded-lg bg-indigo-600" />
-            <span className="font-semibold tracking-tight">MockMate</span>
+            <span className="font-semibold tracking-tight">CareerCoach</span>
           </button>
           <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
             <a href="#how-it-works" className="hover:text-slate-900">How it works</a>
@@ -84,7 +84,7 @@ export default function Landing(): JSX.Element {
               Walk in already prepared.
             </h1>
             <p className="mt-6 max-w-lg text-base text-slate-600 leading-7">
-              MockMate runs you through a real, spoken mock interview for the exact role you're
+              CareerCoach runs you through a real, spoken mock interview for the exact role you're
               applying for, then hands you a scored debrief — what worked, what didn't, and what
               to fix before the next one.
             </p>
@@ -234,13 +234,13 @@ export default function Landing(): JSX.Element {
           type="button"
           onClick={() => navigate("/")}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          aria-label="MockMate home"
+          aria-label="CareerCoach home"
         >
           <div className="w-6 h-6 rounded-md bg-indigo-600" />
-          <span className="font-medium text-slate-900 text-sm">MockMate</span>
+          <span className="font-medium text-slate-900 text-sm">CareerCoach</span>
         </button>
         <p className="text-center md:text-right text-xs">
-          © 2026 MockMate. All rights reserved.
+          © 2026 CareerCoach. All rights reserved.
         </p>
       </footer>
     </div>

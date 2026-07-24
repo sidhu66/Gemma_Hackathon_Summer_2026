@@ -6,7 +6,7 @@ type WaveformProps = {
 };
 
 /**
- * MockMate's signature motif — a row of waveform bars.
+ * CareerCoach's signature motif — a row of waveform bars.
  * Used as section dividers, a "recording" indicator, and progress markers.
  * Pass `live` to animate (respects prefers-reduced-motion).
  */

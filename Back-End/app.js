@@ -10,7 +10,7 @@ import { createNewChat, seedChat, askAndrespond } from './openai/openai.js';
 import { setupDeepgram, clearDeepgram } from './deepgram/deepgram.js';
 import jwt from 'jsonwebtoken';
 import axios from "axios";
-
+import { finalizeInterview } from './controllers/mainController.js';
 //configuring dotenv fild
 dotenv.config();
 
@@ -167,19 +167,20 @@ wss.on('connection', (ws, req) => {
                     console.log("socket: received end session message");
 
                     try {
-                        const { data } = await axios.post("http://localhost:8080/api/interview/endInterview",
-                            {
-                                interviewId: ws.interviewId,
-                                chatLog: parsedMessage.chatLog
-                            },
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${accessToken}` // Attach the JWT here
-                                }
-                            });
-                        console.log(data)
+                        // Finalize in-process using the userId from WS auth — do not
+                        // re-hit HTTP with the access token captured at connect time
+                        // (it often expires during a long interview → 401 and no feedback).
+                        const result = await finalizeInterview(
+                            userId,
+                            ws.interviewId,
+                            parsedMessage.chatLog
+                        );
+                        console.log('[interview] finalized', {
+                            interviewId: ws.interviewId,
+                            score: result.score,
+                        });
                     } catch (error) {
-                        console.log("error fetching data: ", error.message);
+                        console.log("error finalizing interview: ", error.message);
                     }
                     ws.globalMessage = "";
                     ws.close();
@@ -187,7 +188,8 @@ wss.on('connection', (ws, req) => {
                 } else if (parsedMessage.type == 'start_deepgram_session') {
                     //starts connection
                     try {
-                        const { data } = await axios.post("http://localhost:8080/api/interview/startInterview",
+                        const apiBase = `http://localhost:${process.env.PORT || 5050}`;
+                        const { data } = await axios.post(`${apiBase}/api/interview/startInterview`,
                             {
                                 company: parsedMessage.companyName,
                                 typeofinterview: parsedMessage.jobType,

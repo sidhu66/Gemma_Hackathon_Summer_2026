@@ -87,7 +87,7 @@ function Intake(): JSX.Element {
       <div className="w-full border-b border-slate-200 bg-white px-6 md:px-10 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-indigo-600" />
-          <span className="font-semibold tracking-tight">MockMate</span>
+          <span className="font-semibold tracking-tight">CareerCoach</span>
         </div>
         <Button
           variant="ghost"
