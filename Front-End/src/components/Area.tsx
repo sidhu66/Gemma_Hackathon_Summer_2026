@@ -34,14 +34,14 @@ export function Area({ interviews }: { interviews: Interview[] }) {
   }, [interviews]);
 
   const chartData = useMemo(() => [
-    { name: "Score", value: average, fill: "#4b0082" },
-    { name: "Remainder", value: 10 - average, fill: "#2d2d2d" },
+    { name: "Score", value: average, fill: "#e7a33e" },
+    { name: "Remainder", value: 10 - average, fill: "#2a2d3a" },
   ], [average]);
 
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto aspect-square max-h-[250px]"
+      className="mx-auto aspect-square max-h-[220px]"
     >
       <PieChart>
         <ChartTooltip
@@ -53,7 +53,8 @@ export function Area({ interviews }: { interviews: Interview[] }) {
           dataKey="value"
           nameKey="name"
           innerRadius={60}
-          strokeWidth={5}
+          strokeWidth={3}
+          stroke="#14161f"
         >
           <Label
             content={({ viewBox }) => {
@@ -68,14 +69,15 @@ export function Area({ interviews }: { interviews: Interview[] }) {
                     <tspan
                       x={viewBox.cx}
                       y={viewBox.cy}
-                      className="fill-foreground text-3xl font-bold"
+                      className="text-3xl font-bold"
+                      style={{ fill: "#f3efe4", fontFamily: "var(--font-display)" }}
                     >
                       {average}
                     </tspan>
                     <tspan
                       x={viewBox.cx}
-                      y={(viewBox.cy || 0) + 24}
-                      className="fill-muted-foreground"
+                      y={(viewBox.cy || 0) + 22}
+                      style={{ fill: "#98a0b3", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}
                     >
                       / 10
                     </tspan>

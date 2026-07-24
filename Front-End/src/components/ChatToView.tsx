@@ -6,14 +6,14 @@ const ChatToView = ({interviewer, chatLog}: ViewChatLogProps) =>{
 
 
     return (
-        <div className="w-1/2 min-w-[350px] max-w-[500px] h-full flex flex-col justify-center">
-            <div 
-                className="relative w-full h-fit max-h-[400px] flex flex-col overflow-y-scroll mb-4 hide-scrollbar"
+        <div className="w-full h-full flex flex-col justify-center">
+            <div
+                className="relative w-full h-fit max-h-[300px] flex flex-col overflow-y-scroll mb-2 hide-scrollbar"
             >
                 <div className="mt-auto" />
 
                 {chatLog?.map((person, i) => <Message person={person} interviewerName={interviewerName} key={i} />)}
-                
+
                 <div />
             </div>
         </div>

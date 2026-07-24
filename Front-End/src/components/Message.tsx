@@ -4,15 +4,15 @@ const Message = ({ person, interviewerName }: {person: Speaker, interviewerName:
     return(
         <>
             <div className={`relative w-full h-fit z-20 mb-4`}>
-                <p className={`font-bold text-md mb-2 w-fit ${person.speaker == "Gemini" ?"bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 text-transparent bg-clip-text" : "text-white" }`}>
+                <p className={`mm-font-mono text-xs uppercase tracking-widest mb-2 w-fit ${person.speaker == "Gemini" ? "text-[var(--mm-signal)]" : "text-[var(--mm-teal)]" }`}>
                     {person.speaker == "Gemini" ? (interviewerName || "Interviewer") : "You"}
                 </p>
-                <p className="relative text-sm text-left w-full">
+                <p className="relative text-sm text-left w-full text-[var(--mm-paper)] leading-relaxed">
                 {person.text}
                 </p>
             </div>
         </>
-        
+
     )
 }
 

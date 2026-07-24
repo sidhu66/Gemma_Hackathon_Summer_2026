@@ -1,47 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --mm-ink: #14161f;
+  --mm-ink-soft: #1c1f2b;
+  --mm-ink-line: rgba(243, 239, 228, 0.1);
+  --mm-paper: #f3efe4;
+  --mm-paper-dim: #d9d3c2;
+  --mm-signal: #e7a33e;
+  --mm-signal-dim: rgba(231, 163, 62, 0.16);
+  --mm-teal: #4fa69c;
+  --mm-teal-dim: rgba(79, 166, 156, 0.16);
+  --mm-slate: #98a0b3;
+  --mm-red: #e0665f;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+body {
+  background: var(--mm-ink);
+  color: var(--mm-paper);
+  font-family: var(--font-body);
 }
 
 .hide-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---- MockMate signature system ---- */
+
+.mm-font-display {
+  font-family: var(--font-display);
+}
+
+.mm-font-mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+.mm-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mm-signal);
+}
+
+.mm-panel {
+  background: var(--mm-ink-soft);
+  border: 1px solid var(--mm-ink-line);
+  border-radius: 0.5rem;
+}
+
+.mm-tape {
+  border-top: 1px dashed var(--mm-ink-line);
+}
+
+/* Waveform bars — the recurring signature motif */
+.mm-waveform {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.mm-waveform-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+@keyframes mm-wave {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+.mm-waveform-live .mm-waveform-bar {
+  animation: mm-wave 1.1s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-waveform-live .mm-waveform-bar {
+    animation: none;
+  }
+}
+
+.mm-btn-primary {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  background: var(--mm-signal);
+  color: var(--mm-ink);
+  border: 1px solid var(--mm-signal);
+  transition: background 150ms ease, color 150ms ease;
+}
+.mm-btn-primary:hover {
+  background: transparent;
+  color: var(--mm-signal);
+}
+
+.mm-btn-ghost {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  background: transparent;
+  color: var(--mm-paper);
+  border: 1px solid var(--mm-ink-line);
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.mm-btn-ghost:hover {
+  border-color: var(--mm-signal);
+  color: var(--mm-signal);
 }

@@ -67,31 +67,31 @@ const InterviewSearch = ({ onSelect }: InterviewSearchProps) => {
     return (
         <div className="relative w-full">
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mm-slate)]" />
                 <Input
                     placeholder="Search by company name..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className="pl-9 bg-[#0b1220] border-gray-600 text-white placeholder:text-gray-400 focus-visible:ring-indigo-500"
+                    className="pl-9 bg-[var(--mm-ink)] border-[var(--mm-ink-line)] text-[var(--mm-paper)] placeholder:text-[var(--mm-slate)] rounded-none h-11 focus-visible:ring-[var(--mm-signal)]"
                 />
             </div>
 
             {results.length > 0 && (
-                <div className="absolute z-20 w-full mt-1 bg-[#0b1220] border border-gray-600 rounded-xl shadow-2xl overflow-hidden max-h-[240px] overflow-y-auto">
+                <div className="absolute z-20 w-full mt-1 bg-[var(--mm-ink)] border border-[var(--mm-ink-line)] shadow-2xl overflow-hidden max-h-[240px] overflow-y-auto">
                     {results.map((interview) => (
                         <div
                             key={interview.id}
                             onClick={() => handleSelect(interview)}
-                            className="w-full px-4 py-3 text-left bg-[#0b1220] hover:bg-indigo-600/30 transition-colors border-b border-gray-700/50 last:border-b-0 cursor-pointer"
+                            className="w-full px-4 py-3 text-left bg-[var(--mm-ink)] hover:bg-[var(--mm-ink-soft)] transition-colors border-b border-[var(--mm-ink-line)] last:border-b-0 cursor-pointer"
                         >
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-white text-sm font-medium">{interview.institution}</p>
-                                    <p className="text-gray-400 text-xs">{interview.typeofinterview} &middot; {formatDate(interview.interview_date)}</p>
+                                    <p className="text-[var(--mm-paper)] text-sm font-medium">{interview.institution}</p>
+                                    <p className="text-[var(--mm-slate)] text-xs mm-font-mono">{interview.typeofinterview} &middot; {formatDate(interview.interview_date)}</p>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <span className="text-indigo-300 text-sm font-semibold">{interview.score}</span>
-                                    <span className="text-gray-500 text-xs">/10</span>
+                                    <span className="text-[var(--mm-signal)] text-sm font-semibold mm-font-mono">{interview.score}</span>
+                                    <span className="text-[var(--mm-slate)] text-xs">/10</span>
                                 </div>
                             </div>
                         </div>
