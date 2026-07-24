@@ -37,6 +37,7 @@ type audioQueueState = {
     audioQueue: audioDataFromTTS[],
     prevChunkNumber: number,
     playChunkFlag: boolean,
+    skippedChunks: number[],
 }
 
 type ChatLogState = {
@@ -77,9 +78,13 @@ type AiCircleProps = {
     currentSpeaker: Speaker
 }
 
-type ChatLogProps = {interviewer: InterviewerType | undefined, 
-    isConnected: boolean, 
-    handleRecord: () => void
+type ChatLogProps = {
+    interviewer: InterviewerType | undefined,
+    isConnected: boolean,
+    handleRecord: () => void,
+    onDoneSpeaking: () => void,
+    canSubmitAnswer: boolean,
+    micPaused: boolean,
 }
 
 type StarCategory = {

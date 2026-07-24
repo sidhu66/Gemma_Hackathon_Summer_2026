@@ -16,7 +16,7 @@ export const clearDeepgram = (ws, deepgram) => {
 }
 
 //code to set up the deepgram web socket event handlers
-export const setupDeepgram = (ws, askAndrespond, chat) => {
+export const setupDeepgram = (ws, _askAndrespond, _chat) => {
     //sets up the transcription websocket connection
     const deepgram = deepgramClient.listen.live({
         language: "en",
@@ -24,7 +24,6 @@ export const setupDeepgram = (ws, askAndrespond, chat) => {
         smart_format: true,
         model: "nova-2",
         interim_results: true,
-        utterance_end_ms: 2000
     });
 
     // Attach error/close before Open — connection can fail before Open fires
@@ -64,9 +63,14 @@ export const setupDeepgram = (ws, askAndrespond, chat) => {
 
         //transcription event listener 
         deepgram.addListener(LiveTranscriptionEvents.Transcript, async (data) => {
-            
+
             //is_final is a property that states that that's the final transcipt
             if (data.is_final) {
+                // Ignore leaked audio while the AI is responding
+                if (ws.isAiTurn) {
+                    return;
+                }
+
                 //finds the highest probability transcript from all the transcriptions that came back
                 let bestPrediction = 0;
                 let foundIndex = 0;
@@ -81,15 +85,6 @@ export const setupDeepgram = (ws, askAndrespond, chat) => {
                 ws.globalMessage += " " + data.channel.alternatives[foundIndex].transcript;
                 ws.send(JSON.stringify(data.channel.alternatives[foundIndex]));
             }
-        });
-
-        //utterance end is what allows the connection to automatically send a response after a certain period
-        //where no transcription data is detected.
-        deepgram.addListener(LiveTranscriptionEvents.UtteranceEnd, async (data) => {
-            console.log(data);
-            //sends the current global message to gemini which then returns the response to the frontend
-            askAndrespond(chat, ws.globalMessage, ws, "message");
-            ws.globalMessage = "";
         });
 
         deepgram.addListener(LiveTranscriptionEvents.Warning, async (warning) => {

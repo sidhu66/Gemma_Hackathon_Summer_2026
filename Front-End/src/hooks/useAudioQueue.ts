@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from "@/redux/store";
-import { popFromQueue} from "@/redux/features/audioQueueSlice"; //need to import the reducer
+import { popFromQueue} from "@/redux/features/audioQueueSlice";
 
 const useAudioQueue = (setKillSocket: React.Dispatch<React.SetStateAction<boolean>>) => {
     const {playChunkFlag, audioQueue} = useAppSelector(state => state.audioQueue);
@@ -8,22 +8,28 @@ const useAudioQueue = (setKillSocket: React.Dispatch<React.SetStateAction<boolea
     const dispatch = useAppDispatch();
     const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
 
+    const finishCurrent = () => {
+        dispatch(popFromQueue());
+        setCurrentAudio(null);
+    };
+
     const playNextAudio = () => {
         if (audioQueue.length > 0) {
             const nextAudioUrl = audioQueue[0];
             const audio = new Audio(nextAudioUrl.audio);
             
-            audio.addEventListener('ended', () => {
-                dispatch(popFromQueue());
-                setCurrentAudio(null);
-            });
+            audio.addEventListener('ended', finishCurrent);
             
             audio.addEventListener('error', (error) => {
                 console.error('Audio playback error:', error);
+                finishCurrent();
             });
     
             setCurrentAudio(audio);
-            audio.play();
+            audio.play().catch((error) => {
+                console.error('Audio play() failed:', error);
+                finishCurrent();
+            });
         }
     };
 

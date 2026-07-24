@@ -23,7 +23,11 @@ async function getMicrophone(): Promise<null | MediaStreamRecorderType> {
     }
   };
 
-async function openMicrophone(microphone: MediaRecorder, socket: WebSocket, setIsRecording: React.Dispatch<React.SetStateAction<boolean>>) {
+async function openMicrophone(
+  microphone: MediaRecorder,
+  socket: WebSocket,
+  setIsRecording: React.Dispatch<React.SetStateAction<boolean>>,
+) {
     //returns a Promise to handle the asynchronous nature of the 
     //setting up of the microphone
     return new Promise<void>((resolve) => {
@@ -38,6 +42,8 @@ async function openMicrophone(microphone: MediaRecorder, socket: WebSocket, setI
         console.log("Microphone connection closed");
       };
   
+      // Always stream packets so Deepgram stays connected.
+      // Pause is done via track.enabled = false (silence) + ws.isAiTurn on the server.
       microphone.ondataavailable = (event) => {
         if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
           socket.send(event.data);
@@ -48,7 +54,13 @@ async function openMicrophone(microphone: MediaRecorder, socket: WebSocket, setI
     });
   }
 
-export async function start(socket: WebSocket, microphoneRef: React.MutableRefObject<MediaRecorder | null>, streamRef: React.MutableRefObject<MediaStream | null>,  setIsRecording: React.Dispatch<React.SetStateAction<boolean>>): Promise<void> {
+export async function start(
+  socket: WebSocket,
+  microphoneRef: React.MutableRefObject<MediaRecorder | null>,
+  streamRef: React.MutableRefObject<MediaStream | null>,
+  setIsRecording: React.Dispatch<React.SetStateAction<boolean>>,
+  _micPausedRef?: React.MutableRefObject<boolean>
+): Promise<void> {
     console.log("client: waiting to open microphone");
 
     if(!microphoneRef.current){

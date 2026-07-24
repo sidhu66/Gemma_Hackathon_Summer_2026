@@ -5,49 +5,47 @@ import { MeetingState, UseWebSocketHook } from "@/utils/types";
 import useWebSocket from "@/hooks/useWebSocket";
 import useAudioQueue from "@/hooks/useAudioQueue";
 import { useAppDispatch } from "@/redux/store";
-import MeetingOptions from "@/components/MeetingOptions";
 import Chat from "@/components/Chat";
 import Video from "@/components/Video";
 import useVideo from "@/hooks/useVideo";
 import { clearQueue } from "@/redux/features/audioQueueSlice";
-import { clearChatLog, resetSpeaker } from "@/redux/features/chatLogSlice";
+import { clearChatLog, resetSpeaker, updateChatLog, updateSpeaker } from "@/redux/features/chatLogSlice";
 import { handleWebSocketThunk } from "@/redux/features/chatLogThunk";
 import { convertTextToSpeech } from "@/utils/convertTextToSpeech";
 import AiCircle from "@/components/AiCircle";
-import api from "@/lib/axios";
 import Waveform from "@/components/Waveform";
-/*
-Custom hooks allow us to store stateful logic in them. This means each
-hook has a independant section compared to every other
-call of the same hook. If hooks do not use 
-any other hooks declare them as a normal function.
-
-PURE FUNCTIONS:
-- make sure there is a complete understanding of the output based on the input
-- if we want to mutate a variable it must be defined in the scope of the function
-since each component renders asynchronously. Try to express logic with rendering alone
-useEffect should be last option.
-*/
 
 export default function Meeting(): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as MeetingState;
   const { currentSpeaker, chatLog } = useAppSelector((state) => state.chatLog);
+  const { audioQueue } = useAppSelector((state) => state.audioQueue);
   const user = useAppSelector((state) => state.user.user);
   const dispatch = useAppDispatch();
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const microphoneRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const micPausedRef = useRef(true);
+  const userTurnActiveRef = useRef(false);
+  const sentTurnReadyRef = useRef(false);
+  const [micPaused, setMicPaused] = useState(true);
+  const [awaitingAiResponse, setAwaitingAiResponse] = useState(false);
   const [killSocket, setKillSocket] = useState(false);
 
   const { currentAudio, setCurrentAudio } = useAudioQueue(setKillSocket);
 
   const handleWebSocketMessage = async (data: any) => {
-    if (data.chunk && state.interviewer) {
+    if (data.type === "ai_response_complete") {
+      setAwaitingAiResponse(false);
+      return;
+    }
+    // Update chat / clear audio queue for a new AI turn before TTS enqueue
+    await dispatch(handleWebSocketThunk(data));
+    // Ignore late TTS after the user's turn has already started
+    if (data.chunk && state.interviewer && !userTurnActiveRef.current) {
       await convertTextToSpeech(data, dispatch, state.interviewer.model);
     }
-    dispatch(handleWebSocketThunk(data));
   };
 
   const {
@@ -62,25 +60,49 @@ export default function Meeting(): JSX.Element {
     streamRef,
     setIsRecording,
     state,
+    micPausedRef,
   );
-  const { videoRef, stopVideo, startVideo, isVideoOn } = useVideo();
+  const { videoRef, stopVideo, startVideo } = useVideo();
 
-  const toggleMute = () => {
-    if (streamRef.current) {
-      streamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-      setIsRecording((prevState) => !prevState);
-    }
+  const beginAiTurn = () => {
+    userTurnActiveRef.current = false;
+    sentTurnReadyRef.current = false;
+    setAwaitingAiResponse(true);
+    micPausedRef.current = true;
+    setMicPaused(true);
   };
 
   const handleRecord = () => {
     if (isConnected) {
       setKillSocket(true);
     } else {
+      dispatch(clearQueue());
+      dispatch(clearChatLog());
+      dispatch(resetSpeaker());
+      beginAiTurn();
       connect(import.meta.env.VITE_WEBSOCKET_URL);
     }
   };
+
+  const onDoneSpeaking = () => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    beginAiTurn();
+    if (streamRef.current) {
+      streamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = false;
+      });
+    }
+    setIsRecording(false);
+    socketRef.current.send(JSON.stringify({ type: "user_finished_speaking" }));
+  };
+
+  const canSubmitAnswer =
+    isConnected &&
+    !micPaused &&
+    currentSpeaker.speaker === "User" &&
+    currentSpeaker.text.trim().length > 0;
 
   useEffect(() => {
     if (!user) {
@@ -90,11 +112,45 @@ export default function Meeting(): JSX.Element {
     }
   }, [user, state?.fromIntake]);
 
+  // Pause mic while awaiting AI text or while TTS is playing (including between chunks)
   useEffect(() => {
-    if ((currentAudio && isRecording) || (!currentAudio && !isRecording)) {
-      toggleMute();
+    const aiAudioPending =
+      !userTurnActiveRef.current &&
+      (currentAudio !== null || audioQueue.length > 0);
+
+    const shouldPause =
+      !isConnected || awaitingAiResponse || aiAudioPending;
+
+    const wasPaused = micPausedRef.current;
+    micPausedRef.current = shouldPause;
+    setMicPaused(shouldPause);
+
+    if (streamRef.current) {
+      streamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = !shouldPause;
+      });
     }
-  }, [currentAudio, currentSpeaker]);
+    setIsRecording(isConnected && !shouldPause);
+
+    // Enter user turn once when AI audio fully finished
+    if (
+      wasPaused &&
+      !shouldPause &&
+      isConnected &&
+      !sentTurnReadyRef.current &&
+      socketRef.current?.readyState === WebSocket.OPEN
+    ) {
+      sentTurnReadyRef.current = true;
+      userTurnActiveRef.current = true;
+
+      if (currentSpeaker.speaker === "Gemini" && currentSpeaker.text.trim()) {
+        dispatch(updateChatLog());
+      }
+      dispatch(updateSpeaker({ speaker: "User", text: "" }));
+
+      socketRef.current.send(JSON.stringify({ type: "user_turn_ready" }));
+    }
+  }, [awaitingAiResponse, currentAudio, audioQueue.length, isConnected]);
 
   useEffect(() => {
     if (killSocket) {
@@ -141,6 +197,11 @@ export default function Meeting(): JSX.Element {
       setIsRecording(false);
       setKillSocket(false);
       setCurrentAudio(null);
+      setAwaitingAiResponse(false);
+      micPausedRef.current = true;
+      userTurnActiveRef.current = false;
+      sentTurnReadyRef.current = false;
+      setMicPaused(true);
     };
   }, [killSocket]);
 
@@ -149,14 +210,20 @@ export default function Meeting(): JSX.Element {
       <div className="w-full h-16 flex flex-row justify-between items-center px-8 border-b border-[var(--mm-ink-line)]">
         <div className="flex items-center gap-2">
           <Waveform
-            live={isConnected}
+            live={isConnected && !micPaused}
             bars={12}
-            className={isConnected ? "text-[var(--mm-signal)] h-4" : "text-[var(--mm-slate)] h-4"}
+            className={isConnected && !micPaused ? "text-[var(--mm-signal)] h-4" : "text-[var(--mm-slate)] h-4"}
           />
           <p className="mm-font-mono text-sm tracking-widest uppercase text-[var(--mm-paper)]">MockMate</p>
         </div>
         <span className="mm-font-mono text-xs text-[var(--mm-slate)]">
-          {isConnected ? "Recording session…" : "Not connected"}
+          {!isConnected
+            ? "Not connected"
+            : micPaused
+              ? awaitingAiResponse
+                ? "Interviewer responding…"
+                : "Interviewer speaking…"
+              : "Your turn — speak, then tap Done"}
         </span>
       </div>
       <div className="w-full h-[calc(100vh-100px)] flex flex-row items-center justify-between px-10 py-6 pr-24">
@@ -170,11 +237,13 @@ export default function Meeting(): JSX.Element {
           interviewer={state?.interviewer}
           currentSpeaker={currentSpeaker}
         />
-        {/* <MeetingOptions isConnected={isConnected} handleRecord={handleRecord} stopVideo={stopVideo} startVideo={startVideo} isVideoOn={isVideoOn} isRecording={isRecording} toggleMute={toggleMute} currentSpeaker={currentSpeaker} /> */}
         <Chat
           interviewer={state?.interviewer}
           isConnected={isConnected}
           handleRecord={handleRecord}
+          onDoneSpeaking={onDoneSpeaking}
+          canSubmitAnswer={canSubmitAnswer}
+          micPaused={micPaused}
         />
       </div>
     </div>

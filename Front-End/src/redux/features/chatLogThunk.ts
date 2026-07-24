@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { AppDispatch, RootState } from '@/redux/store';
 import { updateSpeaker, updateChatLog, appendToCurrentSpeakerText, appendToCurrentSpeakerTextGemini } from './chatLogSlice';
-import { setPrevChunkNumber } from './audioQueueSlice';
+import { setPrevChunkNumber, clearQueue } from './audioQueueSlice';
 import { dataFromGemini, WebSocketMessage } from '@/utils/types';
 
 function isDataFromGemini(data: WebSocketMessage): data is dataFromGemini {
@@ -21,6 +21,8 @@ export const handleWebSocketThunk = createAsyncThunk<void, WebSocketMessage, { s
 
                 // Then, set the new speaker data for "Gemini" with the new chunk
                 dispatch(updateSpeaker({ speaker: "Gemini", text: '' }));
+                // Fresh TTS sequence for this AI turn
+                dispatch(clearQueue());
             }
             dispatch(appendToCurrentSpeakerTextGemini(data));
             

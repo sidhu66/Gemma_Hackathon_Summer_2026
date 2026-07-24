@@ -52,11 +52,11 @@ app.listen(process.env.PORT, () => {
     console.log(`listening on port ${process.env.PORT}`);
 });
 
-const s = app.listen(process.env.WEBSOCKET_PORT, ()=>{
+const s = app.listen(process.env.WEBSOCKET_PORT, () => {
     console.log(`Listening on port ${process.env.WEBSOCKET_PORT}`)
 })
 
-function onSocketPreError(e){
+function onSocketPreError(e) {
     console.log(e);
 }
 
@@ -67,28 +67,28 @@ function onSocketPreError(e){
 // This function is designed to parse the cookie header string into an object
 const parseCookies = (cookieHeader) => {
     const list = {};
-    
+
     // Check if cookieHeader exists and split it by ';' to get individual cookies
     cookieHeader && cookieHeader.split(';').forEach((cookie) => {
         // Split each cookie string by '=' to get key-value pairs
         const parts = cookie.split('=');
-        
+
         // parts.shift() gets the first element in the array (the key) and .trim() removes any whitespace
         const key = parts.shift().trim();
-        
+
         // Join the remaining parts of the array to form the cookie value
         // this is because we are looking at a specific cookie if it had an = in our 
         // cookie value it wouldve been split into 2 or more so we join those back together 
         // its a conflict of type
         const value = parts.join('=');
-        
+
         // decodeURI converts encoded characters in the value back to their original form
         const decodedValue = decodeURI(value);
-        
+
         // Add the key-value pair to the list object
         list[key] = decodedValue;
     });
-    
+
     return list;
 };
 
@@ -104,7 +104,7 @@ const isJSON = (str) => {
 
 const wss = new WebSocketServer({ noServer: true });
 
-s.on('upgrade', (req, socket, head) =>{
+s.on('upgrade', (req, socket, head) => {
     //before we have officially connected and allowed the user to connect.
     socket.on('error', onSocketPreError);
 
@@ -112,16 +112,16 @@ s.on('upgrade', (req, socket, head) =>{
     const cookies = parseCookies(req.headers.cookie);
     const token = cookies.accessToken;
 
-    if(!token){
-         // Respond with an HTTP Unauthorized status
-         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-         socket.destroy();
-         return;
+    if (!token) {
+        // Respond with an HTTP Unauthorized status
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        socket.destroy();
+        return;
     }
 
     try {
         // Verify the token
-        const user = {userInfo: jwt.verify(token, process.env.ACCESS_TOKEN_SECRET), accessToken: token}
+        const user = { userInfo: jwt.verify(token, process.env.ACCESS_TOKEN_SECRET), accessToken: token }
         req.user = user; // Attach user info to the request
 
         // Proceed with WebSocket upgrade
@@ -148,6 +148,7 @@ wss.on('connection', (ws, req) => {
     ws.keepAlive;
     ws.interupted;
     ws.interviewId;
+    ws.isAiTurn = false;
     //create a new chat instance for this specific interview session
     ws.chat = createNewChat(userId);
     //variable that holds the connection to deepgram
@@ -165,19 +166,19 @@ wss.on('connection', (ws, req) => {
                 if (parsedMessage.type === 'end_deepgram_session') {
                     console.log("socket: received end session message");
 
-                    try{
+                    try {
                         const { data } = await axios.post("http://localhost:8080/api/interview/endInterview",
                             {
                                 interviewId: ws.interviewId,
                                 chatLog: parsedMessage.chatLog
                             },
                             {
-                            headers: {
-                                Authorization: `Bearer ${accessToken}` // Attach the JWT here
-                            }
-                        });
+                                headers: {
+                                    Authorization: `Bearer ${accessToken}` // Attach the JWT here
+                                }
+                            });
                         console.log(data)
-                    }catch(error){
+                    } catch (error) {
                         console.log("error fetching data: ", error.message);
                     }
                     ws.globalMessage = "";
@@ -185,8 +186,8 @@ wss.on('connection', (ws, req) => {
                     return;
                 } else if (parsedMessage.type == 'start_deepgram_session') {
                     //starts connection
-                    try{
-                        const { data } = await axios.post("http://localhost:8080/api/interview/startInterview", 
+                    try {
+                        const { data } = await axios.post("http://localhost:8080/api/interview/startInterview",
                             {
                                 company: parsedMessage.companyName,
                                 typeofinterview: parsedMessage.jobType,
@@ -201,19 +202,49 @@ wss.on('connection', (ws, req) => {
                                 }
                             },
                             {
-                            headers: {
-                                Authorization: `Bearer ${accessToken}` // Attach the JWT here
-                            }
+                                headers: {
+                                    Authorization: `Bearer ${accessToken}` // Attach the JWT here
+                                }
                             });
                         ws.interviewId = data.interviewId;
                         seedChat(ws.chat, parsedMessage, ws.interviewId);
                         ws.send(JSON.stringify({ type: 'interviewId', interviewId: ws.interviewId }));
-                        
+
+                        ws.isAiTurn = true;
                         await askAndrespond(ws.chat, ws.globalMessage, ws, "intro");
-                    }catch(error){
+                        ws.send(JSON.stringify({ type: 'ai_response_complete' }));
+                        // isAiTurn stays true until client sends user_turn_ready (mic unpaused)
+                    } catch (error) {
                         console.log("error fetching data: ", error.message);
+                        ws.isAiTurn = false;
+                        try {
+                            ws.send(JSON.stringify({ type: 'ai_response_complete' }));
+                        } catch (_) { /* client may already be gone */ }
                     }
-                    
+
+                } else if (parsedMessage.type === 'user_finished_speaking') {
+                    if (ws.globalMessage?.trim()) {
+                        try {
+                            ws.isAiTurn = true;
+                            await askAndrespond(ws.chat, ws.globalMessage, ws, "message");
+                            ws.globalMessage = "";
+                            ws.send(JSON.stringify({ type: 'ai_response_complete' }));
+                        } catch (error) {
+                            console.log("error on user_finished_speaking: ", error.message);
+                            ws.isAiTurn = false;
+                            try {
+                                ws.send(JSON.stringify({ type: 'ai_response_complete' }));
+                            } catch (_) { /* client may already be gone */ }
+                        }
+                    } else {
+                        try {
+                            ws.send(JSON.stringify({ type: 'ai_response_complete' }));
+                        } catch (_) { /* client may already be gone */ }
+                    }
+                } else if (parsedMessage.type === 'user_turn_ready') {
+                    // Client finished AI TTS / unpaused mic — accept transcripts again
+                    ws.isAiTurn = false;
+                    ws.globalMessage = "";
                 }
             } catch (e) {
                 console.log(e.message);
